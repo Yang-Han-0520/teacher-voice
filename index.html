@@ -206,7 +206,6 @@
   .script-opts .mode { margin-bottom: 0; }
   .font-ctl { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); }
   .font-ctl b { min-width: 2em; text-align: center; color: var(--ink); font-variant-numeric: tabular-nums; }
-  .edit-btn { margin-left: auto; }
   .mode button {
     border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 7px 14px; font-size: 15px; font-weight: 600;
   }
@@ -340,10 +339,10 @@
 
       <div class="panel" id="panel-script" hidden>
         <div class="script-bar">
-          <button class="mini list-btn" id="scriptList">📚 대본 목록</button>
           <select id="scriptSel" aria-label="대본 고르기"></select>
+          <button class="mini list-btn" id="scriptList">📚 대본 목록</button>
+          <button class="mini" id="scriptEdit">✏️ 내용 편집</button>
           <button class="mini" id="scriptVer" hidden>🕘 버전 기록</button>
-          <button class="mini edit-btn" id="scriptEdit">✏️ 내용 편집</button>
           <input type="file" id="scriptFile" accept=".hwpx,.hwp,.txt" hidden>
         </div>
         <div class="script-opts">
