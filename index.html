@@ -192,6 +192,12 @@
   .sent:hover { background: var(--accent-soft); }
   .sent.done { color: #9a9aa0; }
   .sent.now { background: #ffe58a; color: var(--ink); box-shadow: 0 0 0 2px #ffe58a; }
+  .sent.next { color: var(--ink); box-shadow: 0 0 0 2px var(--accent); background: var(--accent-soft); }
+  .mode { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 12px; font-size: 15px; color: var(--muted); }
+  .mode button {
+    border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 7px 14px; font-size: 15px; font-weight: 600;
+  }
+  .mode button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
   .script-empty { color: var(--muted); padding: 24px 12px; text-align: center; font-size: 16px; }
   .player { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
   .player .btn { padding: 12px 16px; font-size: 18px; }
@@ -252,7 +258,14 @@
           <select id="scriptSel" aria-label="대본 고르기"></select>
           <button class="btn" id="scriptEdit">편집</button>
           <button class="btn" id="scriptNew">+ 새 대본</button>
+          <button class="btn" id="scriptOpen" title="한글(.hwpx) 또는 텍스트(.txt) 파일">📂 파일 불러오기</button>
           <button class="btn" id="scriptDel" style="color:var(--stop)">삭제</button>
+          <input type="file" id="scriptFile" accept=".hwpx,.hwp,.txt" hidden>
+        </div>
+        <div class="mode" id="modeBox">
+          읽기 방식
+          <button data-mode="line">👆 한 문장씩 (누를 때마다)</button>
+          <button data-mode="flow">▶ 쭉 이어서</button>
         </div>
         <div id="scriptEditBox" hidden>
           <input id="scriptTitle" placeholder="대본 제목 (예: 3반 국어 5과)">
@@ -267,9 +280,9 @@
             <button class="btn" id="pNext" title="다음 문장 (→)">⏭ 다음</button>
             <button class="btn stop" id="pStop" title="처음으로">■ 처음으로</button>
           </div>
-          <label class="toggle"><input type="checkbox" id="pauseAtPara"> 문단마다 멈추기 (▶를 누르면 다음 문단을 읽어요)</label>
+          <label class="toggle" id="pauseAtParaBox"><input type="checkbox" id="pauseAtPara"> 문단마다 멈추기 (▶를 누르면 다음 문단을 읽어요)</label>
           <div class="player-status" id="pStatus"></div>
-          <p class="hint">문장을 누르면 거기서부터 읽어요 · 스페이스 = 읽기/일시정지 · ← → = 이전/다음 문장</p>
+          <p class="hint" id="scriptHint"></p>
         </div>
       </div>
 
@@ -415,9 +428,20 @@
   voiceSel.addEventListener("change", function () { settings.voice = voiceSel.value; saveSettings(); });
 
   // 문장 단위로 끊어서 읽기 (긴 문장이 중간에 끊기는 브라우저 문제 방지)
+  // 마침표 뒤에 공백·줄끝이 올 때만 끊는다 → "3.26년" 같은 숫자는 안 끊김
   function splitText(t) {
-    var parts = t.match(/[^.!?…\n]+[.!?…]*/g) || [];
-    return parts.map(function (s) { return s.trim(); }).filter(Boolean);
+    var out = [];
+    (t || "").split(/\n+/).forEach(function (line) {
+      line.split(/(?<=[.!?…])\s+/).forEach(function (s) {
+        s = s.trim();
+        if (s) out.push(s);
+      });
+    });
+    return out;
+  }
+  // 소리로 읽을 때만 다듬는다 (화면 글자는 그대로): ㅠㅠ·ㅋㅋ 같은 자모, 물결표 제거
+  function spokenForm(t) {
+    return (t || "").replace(/[ㄱ-ㅎㅏ-ㅣ]+/g, " ").replace(/~+/g, " ").replace(/\s+/g, " ").trim();
   }
 
   var speakToken = 0;
@@ -425,7 +449,7 @@
   function setSpeaking(on) { stopBtn.classList.toggle("active", on); }
 
   function makeUtterance(text) {
-    var u = new SpeechSynthesisUtterance(text);
+    var u = new SpeechSynthesisUtterance(spokenForm(text) || text);
     var v = voices.find(function (x) { return x.name === voiceSel.value; });
     if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = "ko-KR"; }
     u.rate = settings.rate;
@@ -443,7 +467,7 @@
     if (!synth) return;
     synth.cancel();
     var token = ++speakToken;
-    var parts = splitText(text);
+    var parts = splitText(text).filter(function (p) { return spokenForm(p); });
     if (!parts.length) parts = [text];
     setSpeaking(true);
     setTimeout(function () {
@@ -686,7 +710,12 @@
   function parseScript(text) {
     var items = [];
     (text || "").split(/\n\s*\n/).forEach(function (para, pi) {
-      splitText(para).forEach(function (s) { items.push({ text: s, para: pi }); });
+      splitText(para).forEach(function (s) {
+        var prev = items[items.length - 1];
+        // "ㅠㅠ"처럼 소리로 읽을 게 없는 조각은 앞 문장에 붙인다 (한 번 눌렀는데 아무 소리 안 나는 일 방지)
+        if (!spokenForm(s) && prev && prev.para === pi) { prev.text += " " + s; return; }
+        items.push({ text: s, para: pi });
+      });
     });
     // 문단 번호를 0,1,2… 로 다시 매긴다 (빈 문단 건너뜀)
     var map = {}, n = 0;
@@ -741,15 +770,20 @@
     highlight();
   }
 
+  function lineMode() { return settings.readMode !== "flow"; }
+
   function highlight(scroll) {
     document.querySelectorAll("#scriptView .sent").forEach(function (el) {
       var i = Number(el.dataset.i);
-      el.classList.toggle("now", i === player.idx && (player.playing || player.idx > 0));
+      var atIdx = i === player.idx;
+      el.classList.toggle("now", atIdx && player.playing);
+      // 다음에 읽을 문장 (파란 테두리)
+      el.classList.toggle("next", atIdx && !player.playing && (player.idx > 0 || lineMode()));
       el.classList.toggle("done", i < player.idx);
     });
     if (scroll) {
-      var cur = document.querySelector("#scriptView .sent.now");
-      if (cur) cur.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      var cur = document.querySelector("#scriptView .sent.now, #scriptView .sent.next");
+      if (cur) cur.scrollIntoView({ block: "center", behavior: "smooth" });
     }
     updatePlayer();
   }
@@ -757,10 +791,33 @@
   function updatePlayer(msg) {
     var total = player.items.length;
     var playBtn = $("#pPlay");
-    playBtn.textContent = player.playing ? "⏸ 일시정지" : (player.idx > 0 ? "▶ 이어서 읽기" : "▶ 처음부터 읽기");
+    if (lineMode()) {
+      playBtn.textContent = player.playing ? "■ 멈추기" : (player.idx > 0 ? "▶ 다음 문장 읽기" : "▶ 첫 문장 읽기");
+    } else {
+      playBtn.textContent = player.playing ? "⏸ 일시정지" : (player.idx > 0 ? "▶ 이어서 읽기" : "▶ 처음부터 읽기");
+    }
     playBtn.disabled = !total;
     $("#pStatus").textContent = msg || (total ? ("문장 " + Math.min(player.idx + 1, total) + " / " + total + (player.playing ? " · 읽는 중" : "")) : "");
   }
+
+  function renderMode() {
+    document.querySelectorAll("#modeBox button").forEach(function (b) {
+      b.classList.toggle("on", (b.dataset.mode === "line") === lineMode());
+    });
+    $("#pauseAtParaBox").style.display = lineMode() ? "none" : "";
+    $("#scriptHint").textContent = lineMode()
+      ? "▶ 버튼이나 스페이스를 누를 때마다 한 문장씩 읽어요 · 문장을 누르면 그 문장만 읽어요 · ← → = 이전/다음 문장으로 이동"
+      : "문장을 누르면 거기서부터 쭉 읽어요 · 스페이스 = 읽기/일시정지 · ← → = 이전/다음 문장";
+    highlight();
+  }
+  document.querySelectorAll("#modeBox button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      scriptPause();
+      settings.readMode = b.dataset.mode;
+      saveSettings();
+      renderMode();
+    });
+  });
 
   function speakCurrent() {
     if (!synth) return;
@@ -780,6 +837,12 @@
         if (next >= player.items.length) { player.idx = next; scriptFinish(); return; }
         var paraEnd = player.items[next].para !== it.para;
         player.idx = next;
+        if (lineMode()) {
+          player.playing = false;
+          highlight(true);
+          updatePlayer("다음 문장은 파란 테두리 · ▶ 또는 스페이스를 누르면 읽어요 (" + (next + 1) + " / " + player.items.length + ")");
+          return;
+        }
         if (settings.pauseAtPara && paraEnd) {
           player.playing = false;
           highlight(true);
@@ -886,6 +949,91 @@
     renderScriptSelect();
     renderScriptView();
   });
+  // ---------- 대본 파일 불러오기 (.hwpx / .txt) ----------
+  // hwpx = zip 안의 Contents/sectionN.xml. 브라우저 기본 기능(DecompressionStream)으로 직접 푼다.
+  function readZip(buf) {
+    var dv = new DataView(buf), eocd = -1;
+    for (var i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 65557); i--) {
+      if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    }
+    if (eocd < 0) throw new Error("zip 아님");
+    var count = dv.getUint16(eocd + 10, true), off = dv.getUint32(eocd + 16, true), files = {};
+    for (var n = 0; n < count; n++) {
+      if (dv.getUint32(off, true) !== 0x02014b50) break;
+      var nlen = dv.getUint16(off + 28, true), elen = dv.getUint16(off + 30, true), clen = dv.getUint16(off + 32, true);
+      var name = new TextDecoder().decode(new Uint8Array(buf, off + 46, nlen));
+      files[name] = { method: dv.getUint16(off + 10, true), csize: dv.getUint32(off + 20, true), lho: dv.getUint32(off + 42, true) };
+      off += 46 + nlen + elen + clen;
+    }
+    return { dv: dv, files: files };
+  }
+  function zipEntry(buf, dv, e) {
+    var nlen = dv.getUint16(e.lho + 26, true), elen = dv.getUint16(e.lho + 28, true);
+    var data = new Uint8Array(buf, e.lho + 30 + nlen + elen, e.csize);
+    if (e.method === 0) return Promise.resolve(data);
+    if (e.method === 8) {
+      var stream = new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+      return new Response(stream).arrayBuffer().then(function (b) { return new Uint8Array(b); });
+    }
+    return Promise.reject(new Error("압축 방식 " + e.method));
+  }
+  function hwpxToText(buf) {
+    var z = readZip(buf);
+    var secs = Object.keys(z.files).filter(function (n) { return /^Contents\/section\d+\.xml$/i.test(n); })
+      .sort(function (a, b) { return parseInt(a.match(/\d+/)[0], 10) - parseInt(b.match(/\d+/)[0], 10); });
+    if (!secs.length) return Promise.reject(new Error("본문 없음"));
+    var paras = [];
+    return secs.reduce(function (p, name) {
+      return p.then(function () { return zipEntry(buf, z.dv, z.files[name]); }).then(function (bytes) {
+        var doc = new DOMParser().parseFromString(new TextDecoder("utf-8").decode(bytes), "application/xml");
+        var ps = doc.getElementsByTagNameNS("*", "p");
+        for (var i = 0; i < ps.length; i++) {
+          var txt = "", ts = ps[i].getElementsByTagNameNS("*", "t");
+          for (var j = 0; j < ts.length; j++) {
+            var a = ts[j].parentNode;
+            while (a && a.localName !== "p") a = a.parentNode;
+            if (a === ps[i]) txt += ts[j].textContent; // 표 안의 문단이 두 번 들어가지 않게
+          }
+          txt = txt.replace(/\s+/g, " ").trim();
+          if (txt) paras.push(txt);
+        }
+      });
+    }, Promise.resolve()).then(function () { return paras.join("\n\n"); });
+  }
+  function importScript(title, text) {
+    scriptPause();
+    var s = { id: "s" + Date.now(), title: title, text: text };
+    scripts.push(s);
+    curScriptId = s.id;
+    scriptEditing = false;
+    player.idx = 0;
+    saveScripts();
+    renderScriptSelect();
+    renderScriptView();
+    updatePlayer("'" + title + "' 불러왔어요 · 문장 " + player.items.length + "개");
+  }
+  $("#scriptOpen").addEventListener("click", function () { $("#scriptFile").click(); });
+  $("#scriptFile").addEventListener("change", function () {
+    var f = this.files && this.files[0];
+    this.value = "";
+    if (!f) return;
+    var title = f.name.replace(/\.[^.]+$/, "");
+    if (/\.hwp$/i.test(f.name)) {
+      alert("예전 한글 파일(.hwp)은 바로 못 읽어요.\n한글에서 '다른 이름으로 저장' → 파일 형식을 'HWPX'로 저장한 뒤 다시 불러와 주세요.\n(또는 한글에서 글을 복사해서 '편집'에 붙여넣어도 돼요)");
+      return;
+    }
+    var p = /\.txt$/i.test(f.name)
+      ? f.text()
+      : f.arrayBuffer().then(hwpxToText);
+    p.then(function (text) {
+      if (!text.trim()) throw new Error("빈 파일");
+      importScript(title, text);
+    }).catch(function () {
+      alert("파일을 읽지 못했어요. 한글에서 글을 복사해서 '+ 새 대본'에 붙여넣어 주세요.");
+    });
+  });
+  window.__tv = { hwpxToText: hwpxToText, importScript: importScript, splitText: splitText, spokenForm: spokenForm };
+
   $("#scriptTitle").addEventListener("input", function () {
     curScript().title = $("#scriptTitle").value;
     saveScripts();
@@ -959,6 +1107,7 @@
   showTab(tab);
   renderScriptSelect();
   renderScriptView();
+  renderMode();
 })();
 </script>
 </body>
