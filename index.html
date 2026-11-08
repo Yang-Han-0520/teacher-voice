@@ -244,6 +244,26 @@
   .cloud[data-state="busy"] { background: #fff4e0; color: #8a4b00; }
   .cloud[data-state="err"] { background: #fde8e7; color: #b42318; }
 
+  /* 대본 목록 창 */
+  .bar-sep { flex: 0 0 1px; align-self: stretch; background: var(--line); margin: 2px 2px; }
+  .list-btn { background: var(--accent-soft); border-color: #c4d4fb; color: var(--accent); }
+  .list-box { width: min(760px, 100%); }
+  .list-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 12px 18px; border-bottom: 1px solid var(--line); }
+  .list-tools .btn { flex: none; }
+  .list-hint { font-size: 13px; color: var(--muted); margin-left: auto; }
+  .list-rows { overflow-y: auto; padding: 10px 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+  .list-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+  .list-row.cur { border-color: var(--accent); background: var(--accent-soft); }
+  .list-row input {
+    flex: 1; min-width: 0; font-size: 17px; font-weight: 700; padding: 7px 9px;
+    border: 1px solid transparent; border-radius: 8px; background: transparent;
+  }
+  .list-row input:hover { border-color: var(--line); background: var(--card); }
+  .list-row input:focus { outline: none; border-color: var(--accent); background: var(--card); }
+  .list-meta { font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .list-cur { font-size: 12px; font-weight: 700; color: var(--accent); white-space: nowrap; }
+  .empty-actions { display: flex; gap: 10px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+
   /* 버전 기록 창 */
   .modal { position: fixed; inset: 0; z-index: 20; background: rgba(20, 20, 24, 0.45); display: flex; align-items: center; justify-content: center; padding: 16px; }
   .modal[hidden] { display: none; }
@@ -286,7 +306,7 @@
     <li><b>말하고 싶은 문장을 쓰고 Enter</b>를 누르면 소리로 읽어줘요.</li>
     <li>오른쪽 <b>자주 쓰는 말</b> 버튼을 누르면 바로 읽어줘요. 편집으로 문장을 바꿀 수 있어요.</li>
     <li><b>큰 화면으로</b>를 누르면 학생들에게 글씨를 크게 보여줘요.</li>
-    <li>긴 대본은 <b>대본 읽기</b> 탭 → <b>📂 파일 불러오기</b>로 한글 파일(.hwpx)을 바로 넣을 수 있어요.</li>
+    <li>긴 대본은 <b>대본 읽기</b> 탭 → <b>📚 대본 목록</b> → <b>📂 한글 파일 불러오기</b>로 한글 파일(.hwpx)을 바로 넣을 수 있어요.</li>
     <li>대본은 <b>▶ 버튼이나 스페이스를 누를 때마다 한 문장씩</b> 읽어줘요. 쭉 이어서 읽게 바꿀 수도 있어요.</li>
   </ol>
   <div class="row">
@@ -318,11 +338,10 @@
       <div class="panel" id="panel-script" hidden>
         <div class="script-bar">
           <select id="scriptSel" aria-label="대본 고르기"></select>
-          <button class="mini" id="scriptEdit">✏️ 편집</button>
-          <button class="mini" id="scriptOpen" title="한글(.hwpx) 또는 텍스트(.txt) 파일">📂 불러오기</button>
-          <button class="mini" id="scriptNew">+ 새 대본</button>
+          <button class="mini" id="scriptEdit">✏️ 내용 편집</button>
           <button class="mini" id="scriptVer" hidden>🕘 버전 기록</button>
-          <button class="mini danger" id="scriptDel">삭제</button>
+          <span class="bar-sep"></span>
+          <button class="mini list-btn" id="scriptList">📚 대본 목록</button>
           <input type="file" id="scriptFile" accept=".hwpx,.hwp,.txt" hidden>
         </div>
         <div id="scriptEditBox" hidden>
@@ -369,6 +388,21 @@
 
   </div>
 </main>
+
+<div id="listModal" class="modal" hidden>
+  <div class="modal-box list-box">
+    <div class="modal-head">
+      <b id="listTitle">📚 대본 목록</b>
+      <button class="btn small-btn" id="listClose">닫기</button>
+    </div>
+    <div class="list-tools">
+      <button class="btn primary small-btn" id="listOpenFile">📂 한글 파일 불러오기</button>
+      <button class="btn small-btn" id="listNew">+ 새 대본 직접 쓰기</button>
+      <span class="list-hint">제목을 눌러 이름을 바꿀 수 있어요 · 이름순(차시 번호순)으로 정렬돼요</span>
+    </div>
+    <div class="list-rows" id="listRows"></div>
+  </div>
+</div>
 
 <div id="verModal" class="modal" hidden>
   <div class="modal-box">
@@ -732,6 +766,10 @@
   var scriptEditing = false;
   var player = { items: [], idx: 0, playing: false, token: 0, u: null };
 
+  // 대본 ID: 시각만 쓰면 같은 순간에 만든 대본끼리 겹치므로 무작위 문자를 덧붙인다
+  function newId() {
+    return "s" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
   function saveScripts() { store.set("tv.scripts", scripts); store.set("tv.curScript", curScriptId); }
   function curScript() {
     return scripts.find(function (s) { return s.id === curScriptId; }) || scripts[0];
@@ -751,7 +789,7 @@
   function renderScriptSelect() {
     var sel = $("#scriptSel");
     sel.innerHTML = "";
-    scripts.forEach(function (s) {
+    sortedScripts().forEach(function (s) {
       var o = document.createElement("option");
       o.value = s.id;
       o.textContent = s.title.trim() || "제목 없는 대본";
@@ -762,7 +800,7 @@
 
   function renderScriptView() {
     var s = curScript();
-    $("#scriptEdit").textContent = scriptEditing ? "✔ 완료" : "✏️ 편집";
+    $("#scriptEdit").textContent = scriptEditing ? "✔ 편집 완료" : "✏️ 내용 편집";
     $("#scriptEditBox").hidden = !scriptEditing;
     $("#scriptReadBox").hidden = scriptEditing;
     if (scriptEditing) {
@@ -777,7 +815,13 @@
     if (!player.items.length) {
       var em = document.createElement("div");
       em.className = "script-empty";
-      em.textContent = "대본이 비어 있어요. 위의 '📂 불러오기'로 한글 파일을 넣거나 '✏️ 편집'에 붙여넣어 주세요.";
+      em.textContent = "대본이 비어 있어요.";
+      var acts = document.createElement("div"); acts.className = "empty-actions";
+      var b1 = document.createElement("button"); b1.className = "btn primary"; b1.textContent = "📂 한글 파일 불러오기";
+      b1.addEventListener("click", function () { $("#scriptFile").click(); });
+      var b2 = document.createElement("button"); b2.className = "btn"; b2.textContent = "✏️ 직접 쓰기";
+      b2.addEventListener("click", function () { $("#scriptEdit").click(); });
+      acts.appendChild(b1); acts.appendChild(b2); em.appendChild(acts);
       view.appendChild(em);
     } else {
       var frag = document.createDocumentFragment();
@@ -956,9 +1000,24 @@
     renderScriptView();
     if (scriptEditing) $("#scriptText").focus();
   });
-  $("#scriptNew").addEventListener("click", function () {
+  // ---------- 대본 목록 관리 ----------
+  function sortedScripts() {
+    return scripts.slice().sort(function (a, b) {
+      return (a.title || "").localeCompare(b.title || "", "ko", { numeric: true });
+    });
+  }
+  // 내용 편집 중이면 먼저 마무리(저장·버전)하고 목록 작업을 한다
+  function finishEditing() {
+    if (!scriptEditing) return;
+    scriptEditing = false;
+    cloudCancel("script:" + curScript().id);
+    pushScript(curScript(), false);
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  }
+  function newScript() {
     scriptPause();
-    var s = { id: "s" + Date.now(), title: "새 대본", text: "" };
+    finishEditing();
+    var s = { id: newId(), title: "새 대본", text: "" };
     scripts.push(s);
     curScriptId = s.id;
     scriptEditing = true;
@@ -967,22 +1026,85 @@
     renderScriptSelect();
     renderScriptView();
     $("#scriptTitle").select();
-  });
-  $("#scriptDel").addEventListener("click", function () {
-    var s = curScript();
-    if (!confirm("'" + (s.title || "제목 없는 대본") + "' 대본을 삭제할까요?")) return;
+  }
+  function deleteScriptById(id) {
+    var s = scripts.find(function (x) { return x.id === id; });
+    if (!s) return false;
+    if (!confirm("'" + (s.title || "제목 없는 대본") + "' 대본을 삭제할까요?\n(구글 시트의 버전기록에는 남아 있어요)")) return false;
     scriptPause();
-    cloudCancel("script:" + s.id);
-    pushDelete(s.id);
-    scripts = scripts.filter(function (x) { return x.id !== s.id; });
-    if (!scripts.length) scripts = [{ id: "s" + Date.now(), title: "새 대본", text: "" }];
-    curScriptId = scripts[0].id;
-    scriptEditing = false;
-    player.idx = 0;
+    if (id === curScriptId) scriptEditing = false;
+    cloudCancel("script:" + id);
+    pushDelete(id);
+    scripts = scripts.filter(function (x) { return x.id !== id; });
+    if (!scripts.length) scripts = [{ id: newId(), title: "새 대본", text: "" }];
+    if (!scripts.some(function (x) { return x.id === curScriptId; })) { curScriptId = sortedScripts()[0].id; player.idx = 0; }
     saveScripts();
     renderScriptSelect();
     renderScriptView();
+    return true;
+  }
+  function renameScript(id, title) {
+    var s = scripts.find(function (x) { return x.id === id; });
+    if (!s) return;
+    title = title.trim() || "제목 없는 대본";
+    if (title === s.title) return;
+    s.title = title;
+    saveScripts();
+    pushScript(s, true); // 이름만 바꾸는 건 버전을 새로 만들지 않음
+    renderScriptSelect();
+    if (scriptEditing && id === curScriptId) $("#scriptTitle").value = title;
+  }
+  function closeList() { $("#listModal").hidden = true; }
+  function renderList() {
+    var rows = $("#listRows");
+    rows.innerHTML = "";
+    var list = sortedScripts();
+    $("#listTitle").textContent = "📚 대본 목록 (" + list.length + "개)";
+    list.forEach(function (s) {
+      var row = document.createElement("div");
+      row.className = "list-row" + (s.id === curScriptId ? " cur" : "");
+      var inp = document.createElement("input");
+      inp.value = s.title || "";
+      inp.placeholder = "제목 없는 대본";
+      inp.title = "눌러서 이름 바꾸기";
+      inp.addEventListener("keydown", function (e) { if (e.key === "Enter") inp.blur(); });
+      inp.addEventListener("change", function () { renameScript(s.id, inp.value); renderList(); });
+      var meta = document.createElement("span"); meta.className = "list-meta";
+      meta.textContent = "문장 " + parseScript(s.text).length + "개";
+      row.appendChild(inp);
+      if (s.id === curScriptId) {
+        var cur = document.createElement("span"); cur.className = "list-cur"; cur.textContent = "지금 보는 대본";
+        row.appendChild(cur);
+      }
+      row.appendChild(meta);
+      var open = document.createElement("button"); open.className = "mini"; open.textContent = "열기";
+      open.addEventListener("click", function () {
+        scriptPause();
+        finishEditing();
+        curScriptId = s.id;
+        player.idx = 0;
+        saveScripts();
+        renderScriptSelect();
+        renderScriptView();
+        closeList();
+      });
+      var del = document.createElement("button"); del.className = "mini danger"; del.textContent = "삭제";
+      del.addEventListener("click", function () { if (deleteScriptById(s.id)) renderList(); });
+      row.appendChild(open); row.appendChild(del);
+      rows.appendChild(row);
+    });
+  }
+  $("#scriptList").addEventListener("click", function () {
+    scriptPause();
+    finishEditing();
+    renderScriptSelect();
+    renderScriptView();
+    renderList();
+    $("#listModal").hidden = false;
   });
+  $("#listClose").addEventListener("click", closeList);
+  $("#listModal").addEventListener("click", function (e) { if (e.target === this) closeList(); });
+  $("#listNew").addEventListener("click", function () { closeList(); newScript(); });
   // ---------- 대본 파일 불러오기 (.hwpx / .txt) ----------
   // hwpx = zip 안의 Contents/sectionN.xml. 브라우저 기본 기능(DecompressionStream)으로 직접 푼다.
   function readZip(buf) {
@@ -1036,7 +1158,7 @@
   }
   function importScript(title, text) {
     scriptPause();
-    var s = { id: "s" + Date.now(), title: title, text: text };
+    var s = { id: newId(), title: title, text: text };
     scripts.push(s);
     curScriptId = s.id;
     scriptEditing = false;
@@ -1047,7 +1169,7 @@
     renderScriptView();
     updatePlayer("'" + title + "' 불러왔어요 · 문장 " + player.items.length + "개");
   }
-  $("#scriptOpen").addEventListener("click", function () { $("#scriptFile").click(); });
+  $("#listOpenFile").addEventListener("click", function () { closeList(); $("#scriptFile").click(); });
   $("#scriptFile").addEventListener("change", function () {
     var f = this.files && this.files[0];
     this.value = "";
@@ -1204,7 +1326,7 @@
     if (!scriptEditing && !player.playing) {
       var before = curScript() ? curScript().id + "\u0000" + curScript().text : "";
       scripts = (d.scripts || []).map(function (s) { return { id: s.id, title: s.title, text: s.text }; });
-      if (!scripts.length) scripts = [{ id: "s" + Date.now(), title: "새 대본", text: "" }];
+      if (!scripts.length) scripts = [{ id: newId(), title: "새 대본", text: "" }];
       if (!scripts.some(function (s) { return s.id === curScriptId; })) curScriptId = scripts[0].id;
       saveScripts();
       renderScriptSelect();
@@ -1304,7 +1426,7 @@
 
   // ---------- 단축키 ----------
   document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") { stopAll(); closeBig(); closeVer(); return; }
+    if (e.key === "Escape") { stopAll(); closeBig(); closeVer(); closeList(); return; }
     var tag = (document.activeElement && document.activeElement.tagName) || "";
     if (/INPUT|TEXTAREA|SELECT/.test(tag) || editing || e.ctrlKey || e.metaKey || e.altKey) return;
     if (tab === "script" && !scriptEditing) {
