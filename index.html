@@ -162,6 +162,41 @@
   @media (max-width: 900px) { .guide, .banner { margin: 12px 16px 0; } }
   .small-btn { padding: 8px 14px !important; font-size: 15px !important; }
   .small-btn[hidden] { display: none; }
+
+  /* 탭 */
+  .tabs { display: flex; gap: 6px; margin-bottom: 14px; border-bottom: 1px solid var(--line); }
+  .tab {
+    border: none; background: none; padding: 10px 16px 12px; font-size: 18px; font-weight: 700;
+    color: var(--muted); border-bottom: 3px solid transparent; margin-bottom: -1px;
+  }
+  .tab.on { color: var(--accent); border-bottom-color: var(--accent); }
+  .panel[hidden] { display: none; }
+
+  /* 대본 읽기 */
+  .script-top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+  .script-top select { flex: 1 1 180px; min-width: 0; padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); font-size: 16px; }
+  .script-top .btn { padding: 9px 14px; font-size: 15px; }
+  #scriptTitle { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 17px; margin-bottom: 8px; }
+  #scriptText {
+    width: 100%; min-height: 320px; resize: vertical; padding: 14px 16px;
+    border: 2px solid var(--line); border-radius: 12px; font-size: 19px; line-height: 1.6;
+  }
+  #scriptText:focus, #scriptTitle:focus { outline: none; border-color: var(--accent); }
+  .script-view {
+    max-height: 420px; overflow-y: auto; padding: 6px 4px; border: 1px solid var(--line);
+    border-radius: 12px; background: #fcfcfa;
+  }
+  .script-view p { margin: 0; padding: 10px 12px; font-size: 21px; line-height: 1.65; }
+  .script-view p + p { border-top: 1px dashed var(--line); }
+  .sent { cursor: pointer; border-radius: 6px; padding: 1px 2px; }
+  .sent:hover { background: var(--accent-soft); }
+  .sent.done { color: #9a9aa0; }
+  .sent.now { background: #ffe58a; color: var(--ink); box-shadow: 0 0 0 2px #ffe58a; }
+  .script-empty { color: var(--muted); padding: 24px 12px; text-align: center; font-size: 16px; }
+  .player { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .player .btn { padding: 12px 16px; font-size: 18px; }
+  .player .btn.primary { flex: 1 1 160px; }
+  .player-status { font-size: 15px; color: var(--muted); margin-top: 10px; min-height: 1.4em; }
 </style>
 </head>
 <body>
@@ -185,6 +220,7 @@
     <li><b>말하고 싶은 문장을 쓰고 Enter</b>를 누르면 소리로 읽어줘요.</li>
     <li>오른쪽 <b>자주 쓰는 말</b> 버튼을 누르면 바로 읽어줘요. 편집으로 문장을 바꿀 수 있어요.</li>
     <li><b>큰 화면으로</b>를 누르면 학생들에게 글씨를 크게 보여줘요.</li>
+    <li>긴 글은 <b>대본 읽기</b> 탭에 붙여넣고 ▶를 누르면 처음부터 끝까지 읽어줘요.</li>
   </ol>
   <div class="row">
     <button class="btn primary" id="installBtn" hidden style="flex:none">📌 바탕화면에 앱으로 설치</button>
@@ -196,14 +232,47 @@
 <main>
   <div class="stack">
     <section class="card">
-      <h2>직접 입력</h2>
-      <textarea id="input" placeholder="여기에 말할 내용을 입력하세요"></textarea>
-      <p class="hint">Enter = 읽기 · Shift+Enter = 줄바꿈 · Esc = 멈춤 / 큰 화면 닫기</p>
-      <div class="actions">
-        <button class="btn primary" id="speakBtn">🔊 읽어주기</button>
-        <button class="btn" id="bigBtn">🖥 큰 화면으로</button>
-        <button class="btn stop" id="stopBtn">■ 멈춤</button>
+      <div class="tabs">
+        <button class="tab" data-tab="type">✏️ 직접 입력</button>
+        <button class="tab" data-tab="script">📜 대본 읽기</button>
       </div>
+
+      <div class="panel" id="panel-type">
+        <textarea id="input" placeholder="여기에 말할 내용을 입력하세요"></textarea>
+        <p class="hint">Enter = 읽기 · Shift+Enter = 줄바꿈 · Esc = 멈춤 / 큰 화면 닫기</p>
+        <div class="actions">
+          <button class="btn primary" id="speakBtn">🔊 읽어주기</button>
+          <button class="btn" id="bigBtn">🖥 큰 화면으로</button>
+          <button class="btn stop" id="stopBtn">■ 멈춤</button>
+        </div>
+      </div>
+
+      <div class="panel" id="panel-script" hidden>
+        <div class="script-top">
+          <select id="scriptSel" aria-label="대본 고르기"></select>
+          <button class="btn" id="scriptEdit">편집</button>
+          <button class="btn" id="scriptNew">+ 새 대본</button>
+          <button class="btn" id="scriptDel" style="color:var(--stop)">삭제</button>
+        </div>
+        <div id="scriptEditBox" hidden>
+          <input id="scriptTitle" placeholder="대본 제목 (예: 3반 국어 5과)">
+          <textarea id="scriptText" placeholder="여기에 대본을 붙여넣거나 써주세요.&#10;빈 줄로 나누면 문단이 됩니다."></textarea>
+          <p class="hint">쓰는 즉시 저장됩니다. 다 쓰면 위의 <b>완료</b>를 누르세요.</p>
+        </div>
+        <div id="scriptReadBox">
+          <div class="script-view" id="scriptView"></div>
+          <div class="player">
+            <button class="btn primary" id="pPlay">▶ 읽기</button>
+            <button class="btn" id="pPrev" title="이전 문장 (←)">⏮ 이전</button>
+            <button class="btn" id="pNext" title="다음 문장 (→)">⏭ 다음</button>
+            <button class="btn stop" id="pStop" title="처음으로">■ 처음으로</button>
+          </div>
+          <label class="toggle"><input type="checkbox" id="pauseAtPara"> 문단마다 멈추기 (▶를 누르면 다음 문단을 읽어요)</label>
+          <div class="player-status" id="pStatus"></div>
+          <p class="hint">문장을 누르면 거기서부터 읽어요 · 스페이스 = 읽기/일시정지 · ← → = 이전/다음 문장</p>
+        </div>
+      </div>
+
       <label class="toggle"><input type="checkbox" id="showBig"> 읽을 때 큰 화면에도 같이 띄우기</label>
     </section>
 
@@ -355,10 +424,20 @@
   var stopBtn = $("#stopBtn");
   function setSpeaking(on) { stopBtn.classList.toggle("active", on); }
 
+  function makeUtterance(text) {
+    var u = new SpeechSynthesisUtterance(text);
+    var v = voices.find(function (x) { return x.name === voiceSel.value; });
+    if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = "ko-KR"; }
+    u.rate = settings.rate;
+    u.volume = settings.volume;
+    return u;
+  }
+
   function speak(text, opts) {
     text = (text || "").trim();
     if (!text) return;
     opts = opts || {};
+    scriptHalt();
     if (!opts.noHistory) addHistory(text);
     if (settings.showBig || opts.big) openBig(text);
     if (!synth) return;
@@ -369,12 +448,8 @@
     setSpeaking(true);
     setTimeout(function () {
       if (token !== speakToken) return;
-      var v = voices.find(function (x) { return x.name === voiceSel.value; });
       parts.forEach(function (p, i) {
-        var u = new SpeechSynthesisUtterance(p);
-        if (v) { u.voice = v; u.lang = v.lang; } else { u.lang = "ko-KR"; }
-        u.rate = settings.rate;
-        u.volume = settings.volume;
+        var u = makeUtterance(p);
         if (i === parts.length - 1) {
           u.onend = u.onerror = function () { if (token === speakToken) setSpeaking(false); };
         }
@@ -384,6 +459,7 @@
   }
   function stopAll() {
     speakToken++;
+    scriptHalt();
     if (synth) synth.cancel();
     setSpeaking(false);
   }
@@ -572,11 +648,274 @@
     b.addEventListener("click", function () { SOUNDS[b.dataset.sound](); });
   });
 
+  // ---------- 탭 ----------
+  var tab = store.get("tv.tab", "type");
+  function showTab(t) {
+    tab = t;
+    store.set("tv.tab", t);
+    document.querySelectorAll(".tab").forEach(function (b) { b.classList.toggle("on", b.dataset.tab === t); });
+    $("#panel-type").hidden = t !== "type";
+    $("#panel-script").hidden = t !== "script";
+  }
+  document.querySelectorAll(".tab").forEach(function (b) {
+    b.addEventListener("click", function () { showTab(b.dataset.tab); });
+  });
+
+  // ---------- 대본 읽기 ----------
+  var SAMPLE_SCRIPT = {
+    id: "sample",
+    title: "예시 대본 (지우고 써도 돼요)",
+    text: "여러분, 오늘은 선생님이 목이 아파서 컴퓨터가 대신 읽어줄게요.\n\n" +
+      "먼저 교과서 52쪽을 펴주세요. 오늘 배울 내용은 비유법입니다.\n\n" +
+      "비유법은 어떤 대상을 다른 대상에 빗대어 표현하는 방법이에요. 예를 들어 '내 마음은 호수요'라는 문장이 있어요.\n\n" +
+      "그럼 짝과 함께 비유법을 쓴 문장을 하나씩 만들어 볼까요? 5분 드릴게요."
+  };
+  var scripts = store.get("tv.scripts", [SAMPLE_SCRIPT]);
+  if (!scripts.length) scripts = [SAMPLE_SCRIPT];
+  var curScriptId = store.get("tv.curScript", scripts[0].id);
+  var scriptEditing = false;
+  var player = { items: [], idx: 0, playing: false, token: 0, u: null };
+  var pauseAtPara = $("#pauseAtPara");
+  pauseAtPara.checked = !!settings.pauseAtPara;
+  pauseAtPara.addEventListener("change", function () { settings.pauseAtPara = pauseAtPara.checked; saveSettings(); });
+
+  function saveScripts() { store.set("tv.scripts", scripts); store.set("tv.curScript", curScriptId); }
+  function curScript() {
+    return scripts.find(function (s) { return s.id === curScriptId; }) || scripts[0];
+  }
+  function parseScript(text) {
+    var items = [];
+    (text || "").split(/\n\s*\n/).forEach(function (para, pi) {
+      splitText(para).forEach(function (s) { items.push({ text: s, para: pi }); });
+    });
+    // 문단 번호를 0,1,2… 로 다시 매긴다 (빈 문단 건너뜀)
+    var map = {}, n = 0;
+    items.forEach(function (it) { if (!(it.para in map)) map[it.para] = n++; it.para = map[it.para]; });
+    return items;
+  }
+
+  function renderScriptSelect() {
+    var sel = $("#scriptSel");
+    sel.innerHTML = "";
+    scripts.forEach(function (s) {
+      var o = document.createElement("option");
+      o.value = s.id;
+      o.textContent = s.title.trim() || "제목 없는 대본";
+      sel.appendChild(o);
+    });
+    sel.value = curScript().id;
+  }
+
+  function renderScriptView() {
+    var s = curScript();
+    $("#scriptEdit").textContent = scriptEditing ? "완료" : "편집";
+    $("#scriptEditBox").hidden = !scriptEditing;
+    $("#scriptReadBox").hidden = scriptEditing;
+    if (scriptEditing) {
+      $("#scriptTitle").value = s.title;
+      $("#scriptText").value = s.text;
+      return;
+    }
+    player.items = parseScript(s.text);
+    if (player.idx >= player.items.length) player.idx = 0;
+    var view = $("#scriptView");
+    view.innerHTML = "";
+    if (!player.items.length) {
+      var em = document.createElement("div");
+      em.className = "script-empty";
+      em.textContent = "대본이 비어 있어요. 위의 '편집'을 눌러 대본을 붙여넣어 주세요.";
+      view.appendChild(em);
+    } else {
+      var p = null, lastPara = -1;
+      player.items.forEach(function (it, i) {
+        if (it.para !== lastPara) { p = document.createElement("p"); view.appendChild(p); lastPara = it.para; }
+        var sp = document.createElement("span");
+        sp.className = "sent";
+        sp.dataset.i = i;
+        sp.textContent = it.text;
+        sp.addEventListener("click", function () { scriptPlayFrom(i); });
+        p.appendChild(sp);
+        p.appendChild(document.createTextNode(" "));
+      });
+    }
+    highlight();
+  }
+
+  function highlight(scroll) {
+    document.querySelectorAll("#scriptView .sent").forEach(function (el) {
+      var i = Number(el.dataset.i);
+      el.classList.toggle("now", i === player.idx && (player.playing || player.idx > 0));
+      el.classList.toggle("done", i < player.idx);
+    });
+    if (scroll) {
+      var cur = document.querySelector("#scriptView .sent.now");
+      if (cur) cur.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+    updatePlayer();
+  }
+
+  function updatePlayer(msg) {
+    var total = player.items.length;
+    var playBtn = $("#pPlay");
+    playBtn.textContent = player.playing ? "⏸ 일시정지" : (player.idx > 0 ? "▶ 이어서 읽기" : "▶ 처음부터 읽기");
+    playBtn.disabled = !total;
+    $("#pStatus").textContent = msg || (total ? ("문장 " + Math.min(player.idx + 1, total) + " / " + total + (player.playing ? " · 읽는 중" : "")) : "");
+  }
+
+  function speakCurrent() {
+    if (!synth) return;
+    var it = player.items[player.idx];
+    if (!it) { scriptFinish(); return; }
+    var token = ++player.token;
+    synth.cancel();
+    highlight(true);
+    if (settings.showBig) openBig(it.text);
+    setTimeout(function () {
+      if (token !== player.token || !player.playing) return;
+      var u = makeUtterance(it.text);
+      player.u = u; // 일부 브라우저에서 onend가 사라지는 문제 방지용으로 참조 유지
+      u.onend = function () {
+        if (token !== player.token || !player.playing) return;
+        var next = player.idx + 1;
+        if (next >= player.items.length) { player.idx = next; scriptFinish(); return; }
+        var paraEnd = player.items[next].para !== it.para;
+        player.idx = next;
+        if (settings.pauseAtPara && paraEnd) {
+          player.playing = false;
+          highlight(true);
+          updatePlayer("문단 끝 · ▶를 누르면 다음 문단을 읽어요");
+          return;
+        }
+        speakCurrent();
+      };
+      u.onerror = function (e) {
+        if (token !== player.token) return;
+        if (e && (e.error === "interrupted" || e.error === "canceled")) return;
+        player.playing = false;
+        updatePlayer("읽는 중 문제가 생겼어요. ▶를 다시 눌러주세요.");
+      };
+      synth.speak(u);
+    }, 60);
+  }
+
+  function scriptPlayFrom(i) {
+    if (!player.items.length || !synth) return;
+    speakToken++; // 직접 입력 쪽 읽기 중단
+    setSpeaking(false);
+    player.idx = Math.max(0, Math.min(i, player.items.length - 1));
+    player.playing = true;
+    speakCurrent();
+  }
+  function scriptPause() {
+    player.playing = false;
+    player.token++;
+    if (synth) synth.cancel();
+    highlight();
+  }
+  // 다른 소리를 낼 때 대본 읽기를 일시정지한다 (위치는 그대로)
+  function scriptHalt() {
+    if (player.playing) scriptPause();
+  }
+  function scriptFinish() {
+    player.playing = false;
+    player.token++;
+    player.idx = 0;
+    highlight();
+    updatePlayer("끝까지 읽었어요.");
+    document.querySelectorAll("#scriptView .sent").forEach(function (el) { el.classList.remove("done", "now"); });
+  }
+  function scriptStep(d) {
+    if (!player.items.length) return;
+    player.idx = Math.max(0, Math.min(player.idx + d, player.items.length - 1));
+    if (player.playing) speakCurrent(); else highlight(true);
+  }
+
+  $("#pPlay").addEventListener("click", function () {
+    if (player.playing) scriptPause(); else scriptPlayFrom(player.idx);
+  });
+  $("#pPrev").addEventListener("click", function () { scriptStep(-1); });
+  $("#pNext").addEventListener("click", function () { scriptStep(1); });
+  $("#pStop").addEventListener("click", function () {
+    scriptPause();
+    player.idx = 0;
+    highlight();
+    var v = $("#scriptView"); v.scrollTop = 0;
+  });
+
+  $("#scriptSel").addEventListener("change", function () {
+    scriptPause();
+    curScriptId = $("#scriptSel").value;
+    player.idx = 0;
+    saveScripts();
+    renderScriptView();
+  });
+  $("#scriptEdit").addEventListener("click", function () {
+    scriptPause();
+    scriptEditing = !scriptEditing;
+    if (!scriptEditing) {
+      player.idx = 0;
+      // 숨겨진 입력칸에 커서가 남아 단축키(스페이스 등)가 막히지 않게
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    }
+    renderScriptSelect();
+    renderScriptView();
+    if (scriptEditing) $("#scriptText").focus();
+  });
+  $("#scriptNew").addEventListener("click", function () {
+    scriptPause();
+    var s = { id: "s" + Date.now(), title: "새 대본", text: "" };
+    scripts.push(s);
+    curScriptId = s.id;
+    scriptEditing = true;
+    player.idx = 0;
+    saveScripts();
+    renderScriptSelect();
+    renderScriptView();
+    $("#scriptTitle").select();
+  });
+  $("#scriptDel").addEventListener("click", function () {
+    var s = curScript();
+    if (!confirm("'" + (s.title || "제목 없는 대본") + "' 대본을 삭제할까요?")) return;
+    scriptPause();
+    scripts = scripts.filter(function (x) { return x.id !== s.id; });
+    if (!scripts.length) scripts = [{ id: "s" + Date.now(), title: "새 대본", text: "" }];
+    curScriptId = scripts[0].id;
+    scriptEditing = false;
+    player.idx = 0;
+    saveScripts();
+    renderScriptSelect();
+    renderScriptView();
+  });
+  $("#scriptTitle").addEventListener("input", function () {
+    curScript().title = $("#scriptTitle").value;
+    saveScripts();
+    renderScriptSelect();
+  });
+  $("#scriptText").addEventListener("input", function () {
+    curScript().text = $("#scriptText").value;
+    saveScripts();
+  });
+
+  // 버튼을 누른 뒤 포커스가 남아 스페이스·Enter가 다시 눌리는 것 방지
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("button");
+    if (b) b.blur();
+  });
+
   // ---------- 단축키 ----------
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape") { stopAll(); closeBig(); return; }
     var tag = (document.activeElement && document.activeElement.tagName) || "";
     if (/INPUT|TEXTAREA|SELECT/.test(tag) || editing || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (tab === "script" && !scriptEditing) {
+      if (e.key === " " || e.code === "Space") {
+        e.preventDefault();
+        if (player.playing) scriptPause(); else scriptPlayFrom(player.idx);
+        return;
+      }
+      if (e.key === "ArrowRight") { e.preventDefault(); scriptStep(1); return; }
+      if (e.key === "ArrowLeft") { e.preventDefault(); scriptStep(-1); return; }
+    }
     if (/^[1-9]$/.test(e.key)) {
       var p = phrases[Number(e.key) - 1];
       if (p) { e.preventDefault(); speak(p); }
@@ -617,6 +956,9 @@
 
   renderPhrases();
   renderHistory();
+  showTab(tab);
+  renderScriptSelect();
+  renderScriptView();
 })();
 </script>
 </body>
