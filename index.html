@@ -334,7 +334,7 @@
           <div class="progress"><div class="progress-fill" id="pBar"></div></div>
           <div class="script-view" id="scriptView"></div>
           <div class="player">
-            <button class="mini again" id="pPrev" title="방금 문장 다시 읽기 (PageUp)">↺ 다시</button>
+            <button class="mini again" id="pPrev" title="방금 문장 다시 읽기">↺ 다시</button>
             <button class="btn primary" id="pPlay">▶ 첫 문장 읽기</button>
             <span class="pcount" id="pCount"></span>
           </div>
@@ -839,7 +839,7 @@
       b.classList.toggle("on", (b.dataset.mode === "line") === lineMode());
     });
     $("#scriptHint").textContent = lineMode()
-      ? "스페이스·PageDown = 다음 문장 · PageUp = 다시 읽기 · 문장을 누르면 그 문장만 읽어요 · ← → = 위치만 이동"
+      ? "스페이스 = 다음 문장 · 문장을 누르면 그 문장만 읽어요 · ← → = 위치만 이동"
       : "문장을 누르면 거기서부터 쭉 읽어요 · 스페이스 = 읽기/일시정지 · ← → = 위치 이동";
     highlight();
   }
@@ -1308,13 +1308,11 @@
     var tag = (document.activeElement && document.activeElement.tagName) || "";
     if (/INPUT|TEXTAREA|SELECT/.test(tag) || editing || e.ctrlKey || e.metaKey || e.altKey) return;
     if (tab === "script" && !scriptEditing) {
-      // 스페이스·PageDown(발표용 리모컨 '다음' 버튼) = 읽기, PageUp(리모컨 '이전') = 다시 읽기
-      if (e.key === " " || e.code === "Space" || e.key === "PageDown") {
+      if (e.key === " " || e.code === "Space") {
         e.preventDefault();
         if (player.playing) scriptPause(); else scriptPlayFrom(player.idx);
         return;
       }
-      if (e.key === "PageUp") { e.preventDefault(); scriptAgain(); return; }
       if (e.key === "ArrowRight") { e.preventDefault(); scriptStep(1); return; }
       if (e.key === "ArrowLeft") { e.preventDefault(); scriptStep(-1); return; }
     }
