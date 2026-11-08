@@ -1,5 +1,5 @@
 // 오프라인에서도 열리도록 파일을 저장해 둔다. 내용을 바꾸면 VERSION 숫자를 올린다.
-const VERSION = "v7";
+const VERSION = "v8";
 const CACHE = "teacher-voice-" + VERSION;
 const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"];
 
@@ -18,6 +18,7 @@ self.addEventListener("activate", (e) => {
 // 인터넷이 되면 최신 파일을 받고, 안 되면 저장해 둔 파일을 쓴다.
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
+  if (new URL(e.request.url).origin !== self.location.origin) return; // 저장 서버(구글) 요청은 건드리지 않음
   e.respondWith(
     fetch(e.request)
       .then((res) => {

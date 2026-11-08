@@ -196,6 +196,32 @@
   .player .btn { padding: 12px 16px; font-size: 18px; }
   .player .btn.primary { flex: 1 1 160px; }
   .player-status { font-size: 15px; color: var(--muted); margin-top: 10px; min-height: 1.4em; }
+  .script-top .btn[hidden] { display: none; }
+
+  /* 클라우드 상태 */
+  .cloud { font-size: 14px; font-weight: 600; padding: 6px 12px; border-radius: 999px; background: #eaf6ee; color: #1f7a3d; white-space: nowrap; }
+  .cloud[hidden] { display: none; }
+  .cloud[data-state="busy"] { background: #fff4e0; color: #8a4b00; }
+  .cloud[data-state="err"] { background: #fde8e7; color: #b42318; }
+
+  /* 버전 기록 창 */
+  .modal { position: fixed; inset: 0; z-index: 20; background: rgba(20, 20, 24, 0.45); display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .modal[hidden] { display: none; }
+  .modal-box { background: var(--card); border-radius: var(--radius); width: min(980px, 100%); max-height: 88vh; display: flex; flex-direction: column; overflow: hidden; }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--line); font-size: 18px; }
+  .modal-body { display: grid; grid-template-columns: 300px minmax(0, 1fr); min-height: 0; flex: 1; }
+  .ver-list { overflow-y: auto; border-right: 1px solid var(--line); padding: 8px; display: flex; flex-direction: column; gap: 6px; font-size: 15px; color: var(--muted); }
+  .ver-item { text-align: left; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
+  .ver-item b { font-size: 15px; color: var(--ink); }
+  .ver-item span { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ver-item.on { border-color: var(--accent); background: var(--accent-soft); }
+  .ver-preview { display: flex; flex-direction: column; gap: 12px; padding: 14px 16px; min-height: 0; }
+  .ver-preview pre { flex: 1; overflow-y: auto; margin: 0; white-space: pre-wrap; word-break: keep-all; font-family: inherit; font-size: 16px; line-height: 1.6; color: var(--ink); min-height: 200px; }
+  .ver-preview .btn[hidden] { display: none; }
+  @media (max-width: 700px) {
+    .modal-body { grid-template-columns: 1fr; }
+    .ver-list { max-height: 30vh; border-right: none; border-bottom: 1px solid var(--line); }
+  }
 </style>
 </head>
 <body>
@@ -206,6 +232,7 @@
     <label>목소리 <select id="voice"></select></label>
     <label>속도 <input id="rate" type="range" min="0.6" max="1.5" step="0.05"><output id="rateOut"></output></label>
     <label>음량 <input id="volume" type="range" min="0" max="1" step="0.05"><output id="volOut"></output></label>
+    <span class="cloud" id="cloudStatus" hidden></span>
     <button class="btn small-btn" id="testVoice">음성 테스트</button>
     <button class="btn small-btn" id="helpBtn">❓ 사용법</button>
   </div>
@@ -254,6 +281,7 @@
           <button class="btn" id="scriptEdit">편집</button>
           <button class="btn" id="scriptNew">+ 새 대본</button>
           <button class="btn" id="scriptOpen" title="한글(.hwpx) 또는 텍스트(.txt) 파일">📂 파일 불러오기</button>
+          <button class="btn" id="scriptVer" hidden>🕘 버전 기록</button>
           <button class="btn" id="scriptDel" style="color:var(--stop)">삭제</button>
           <input type="file" id="scriptFile" accept=".hwpx,.hwp,.txt" hidden>
         </div>
@@ -299,6 +327,22 @@
 
   </div>
 </main>
+
+<div id="verModal" class="modal" hidden>
+  <div class="modal-box">
+    <div class="modal-head">
+      <b id="verTitle">버전 기록</b>
+      <button class="btn small-btn" id="verClose">닫기</button>
+    </div>
+    <div class="modal-body">
+      <div class="ver-list" id="verList"></div>
+      <div class="ver-preview">
+        <pre id="verText"></pre>
+        <button class="btn primary" id="verRestore" hidden>이 버전으로 되돌리기</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div id="big" hidden>
   <div id="bigText"></div>
@@ -532,7 +576,7 @@
 
   // ---------- 자주 쓰는 말 ----------
   var editing = false;
-  function savePhrases() { store.set("tv.phrases", phrases); }
+  function savePhrases() { store.set("tv.phrases", phrases); cloudSchedule("phrases", pushPhrases, 1500); }
   function renderPhrases() {
     var box = $("#phrasesBox");
     box.innerHTML = "";
@@ -586,6 +630,7 @@
     if (editing) {
       phrases = phrases.map(function (p) { return p.trim(); }).filter(Boolean);
       savePhrases();
+      cloudFlush("phrases");
     }
     editing = !editing;
     renderPhrases();
@@ -853,6 +898,9 @@
     scriptPause();
     scriptEditing = !scriptEditing;
     if (!scriptEditing) {
+      // 편집 완료 → 서버에 저장하고 버전 기록 남김
+      cloudCancel("script:" + curScript().id);
+      pushScript(curScript(), false);
       player.idx = 0;
       // 숨겨진 입력칸에 커서가 남아 단축키(스페이스 등)가 막히지 않게
       if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
@@ -877,6 +925,8 @@
     var s = curScript();
     if (!confirm("'" + (s.title || "제목 없는 대본") + "' 대본을 삭제할까요?")) return;
     scriptPause();
+    cloudCancel("script:" + s.id);
+    pushDelete(s.id);
     scripts = scripts.filter(function (x) { return x.id !== s.id; });
     if (!scripts.length) scripts = [{ id: "s" + Date.now(), title: "새 대본", text: "" }];
     curScriptId = scripts[0].id;
@@ -945,6 +995,7 @@
     scriptEditing = false;
     player.idx = 0;
     saveScripts();
+    pushScript(s, false);
     renderScriptSelect();
     renderScriptView();
     updatePlayer("'" + title + "' 불러왔어요 · 문장 " + player.items.length + "개");
@@ -971,15 +1022,232 @@
   });
   window.__tv = { hwpxToText: hwpxToText, importScript: importScript, splitText: splitText, spokenForm: spokenForm };
 
+  function scheduleDraft() {
+    var s = curScript();
+    cloudSchedule("script:" + s.id, function () { pushScript(s, true); }, 4000);
+  }
   $("#scriptTitle").addEventListener("input", function () {
     curScript().title = $("#scriptTitle").value;
     saveScripts();
     renderScriptSelect();
+    scheduleDraft();
   });
   $("#scriptText").addEventListener("input", function () {
     curScript().text = $("#scriptText").value;
     saveScripts();
+    scheduleDraft();
   });
+
+  // ---------- 클라우드 저장 (전용 링크 #k=비밀키) ----------
+  // 전용 링크로 열면 문장·대본이 구글 시트에 저장돼 어느 PC에서나 같은 내용이 보인다.
+  // 키 없이 열면 지금처럼 이 브라우저에만 저장된다.
+  var API_URL = "";
+  var cloud = { key: null, timers: {}, chain: Promise.resolve(), busy: 0, lastLoad: 0, dirty: { phrases: false, scripts: {}, deletes: {} } };
+  (function () {
+    var m = location.hash.match(/(?:^#|&)k=([A-Za-z0-9_-]{16,})/);
+    if (m) {
+      store.set("tv.key", m[1]);
+      // 프로젝터에 비밀키가 보이지 않게 주소창에서 지운다
+      // 주의: 이 파일의 'history' 변수는 최근 문장 목록이라 브라우저 기록은 window.history로 부른다
+      try { window.history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+    }
+    cloud.key = store.get("tv.key", null);
+  })();
+  function cloudOn() { return !!(API_URL && cloud.key); }
+  function setCloud(state, text) {
+    var el = $("#cloudStatus");
+    el.hidden = !cloudOn();
+    el.dataset.state = state;
+    el.textContent = text;
+  }
+  function api(body) {
+    body.k = cloud.key;
+    var payload = JSON.stringify(body);
+    return fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: payload,
+      keepalive: payload.length < 60000
+    }).then(function (r) { return r.json(); })
+      .then(function (d) { if (!d || !d.ok) throw new Error((d && d.error) || "error"); return d; });
+  }
+  // 요청은 한 줄로 세워서 순서대로 보낸다
+  function cloudSend(body, busyText) {
+    if (!cloudOn()) return Promise.reject(new Error("off"));
+    cloud.busy++;
+    setCloud("busy", busyText || "⏳ 저장 중…");
+    var p = cloud.chain.then(function () { return api(body); });
+    cloud.chain = p.catch(function () {});
+    return p.then(function (d) {
+      cloud.busy--;
+      if (!cloud.busy && !Object.keys(cloud.timers).length) setCloud("ok", "☁️ 저장됨");
+      return d;
+    }, function (err) {
+      cloud.busy--;
+      setCloud("err", err.message === "unauthorized" ? "⚠️ 전용 링크 키가 달라요" : "⚠️ 연결 안 됨 · 이 PC에 임시 저장");
+      throw err;
+    });
+  }
+  function cloudSchedule(name, fn, ms) {
+    if (!cloudOn()) return;
+    if (cloud.timers[name]) clearTimeout(cloud.timers[name].t);
+    setCloud("busy", "✏️ 저장 대기…");
+    cloud.timers[name] = { fn: fn, t: setTimeout(function () { delete cloud.timers[name]; fn(); }, ms) };
+  }
+  function cloudCancel(name) {
+    if (cloud.timers[name]) { clearTimeout(cloud.timers[name].t); delete cloud.timers[name]; }
+  }
+  function cloudFlush(name) {
+    var names = name ? [name] : Object.keys(cloud.timers);
+    names.forEach(function (n) {
+      var job = cloud.timers[n];
+      if (job) { clearTimeout(job.t); delete cloud.timers[n]; job.fn(); }
+    });
+  }
+  function cloudPending() { return Object.keys(cloud.timers).length > 0 || cloud.busy > 0; }
+
+  function pushPhrases() {
+    if (!cloudOn()) return;
+    cloud.dirty.phrases = true;
+    var snapshot = phrases.slice();
+    cloudSend({ a: "savePhrases", phrases: snapshot }).then(function () { cloud.dirty.phrases = false; }, function () {});
+  }
+  var pushSeq = 0;
+  function pushScript(s, draft) {
+    if (!cloudOn() || !s) return;
+    // 실패 대비 표시: 완료 저장(final)은 임시 저장(draft)보다 우선. 가장 마지막 요청이 성공했을 때만 표시를 지운다.
+    var prev = cloud.dirty.scripts[s.id];
+    var mark = { final: !draft || !!(prev && prev.final), seq: ++pushSeq };
+    cloud.dirty.scripts[s.id] = mark;
+    var body = { a: "saveScript", script: { id: s.id, title: s.title, text: s.text }, draft: !!draft };
+    cloudSend(body).then(function () {
+      var cur = cloud.dirty.scripts[s.id];
+      if (cur && cur.seq === mark.seq && (!cur.final || !draft)) delete cloud.dirty.scripts[s.id];
+    }, function () {});
+  }
+  function pushDelete(id) {
+    if (!cloudOn()) return;
+    cloud.dirty.deletes[id] = true;
+    delete cloud.dirty.scripts[id];
+    cloudSend({ a: "deleteScript", id: id }).then(function () { delete cloud.dirty.deletes[id]; }, function () {});
+  }
+  // 저장에 실패했던 것들을 다시 보낸다
+  function retryDirty() {
+    var jobs = [];
+    if (cloud.dirty.phrases) jobs.push({ a: "savePhrases", phrases: phrases.slice() });
+    Object.keys(cloud.dirty.deletes).forEach(function (id) { jobs.push({ a: "deleteScript", id: id }); });
+    Object.keys(cloud.dirty.scripts).forEach(function (id) {
+      var s = scripts.find(function (x) { return x.id === id; });
+      if (s) jobs.push({ a: "saveScript", script: { id: s.id, title: s.title, text: s.text }, draft: !cloud.dirty.scripts[id].final });
+    });
+    return jobs.reduce(function (p, body) {
+      return p.then(function () { return cloudSend(body); });
+    }, Promise.resolve()).then(function () {
+      cloud.dirty = { phrases: false, scripts: {}, deletes: {} };
+    });
+  }
+
+  function applyServer(d) {
+    if (!d) return;
+    if (!editing) {
+      phrases = (d.phrases || []).slice();
+      store.set("tv.phrases", phrases);
+      renderPhrases();
+    }
+    if (!scriptEditing && !player.playing) {
+      var before = curScript() ? curScript().id + "\u0000" + curScript().text : "";
+      scripts = (d.scripts || []).map(function (s) { return { id: s.id, title: s.title, text: s.text }; });
+      if (!scripts.length) scripts = [{ id: "s" + Date.now(), title: "새 대본", text: "" }];
+      if (!scripts.some(function (s) { return s.id === curScriptId; })) curScriptId = scripts[0].id;
+      saveScripts();
+      renderScriptSelect();
+      var after = curScript().id + "\u0000" + curScript().text;
+      if (after !== before) { player.idx = 0; renderScriptView(); }
+    }
+  }
+  function cloudLoad(force) {
+    if (!cloudOn()) return Promise.resolve();
+    if (!force && (cloudPending() || editing || scriptEditing || player.playing)) return Promise.resolve();
+    if (!force && Date.now() - cloud.lastLoad < 8000) return Promise.resolve();
+    cloud.lastLoad = Date.now();
+    return retryDirty()
+      .then(function () { return cloudSend({ a: "load" }, "☁️ 불러오는 중…"); })
+      .then(function (d) {
+        if (d.initialized) return d;
+        // 시트가 비어 있으면(처음 쓰는 기기) 이 PC의 내용으로 시작한다
+        return cloudSend({
+          a: "init",
+          phrases: phrases.slice(),
+          scripts: scripts.filter(function (s) { return (s.text || "").trim(); }).map(function (s) { return { id: s.id, title: s.title, text: s.text }; })
+        }, "☁️ 처음 저장하는 중…");
+      })
+      .then(applyServer)
+      .catch(function () {});
+  }
+  // 다른 기기에서 고친 내용 가져오기: 이 창으로 돌아올 때마다
+  window.addEventListener("focus", function () { cloudLoad(false); });
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") cloudLoad(false);
+    else cloudFlush(); // 창을 닫거나 내릴 때 대기 중인 저장을 바로 보낸다
+  });
+
+  // ---------- 대본 버전 기록 ----------
+  var verData = [], verSel = -1;
+  function closeVer() { $("#verModal").hidden = true; }
+  function renderVerList() {
+    var box = $("#verList");
+    box.innerHTML = "";
+    if (!verData.length) {
+      box.textContent = "아직 저장된 버전이 없어요. 대본을 편집하고 '완료'를 누르면 버전이 남아요.";
+      return;
+    }
+    verData.forEach(function (v, i) {
+      var b = document.createElement("button");
+      b.className = "ver-item" + (i === verSel ? " on" : "");
+      var t = document.createElement("b"); t.textContent = v.time + (i === 0 ? "  (최신)" : "");
+      var m = document.createElement("span"); m.textContent = (v.title || "제목 없음") + " · " + v.text.length + "자";
+      b.appendChild(t); b.appendChild(m);
+      b.addEventListener("click", function () {
+        verSel = i;
+        renderVerList();
+        $("#verText").textContent = v.text;
+        $("#verRestore").hidden = v.text === curScript().text && v.title === curScript().title;
+      });
+      box.appendChild(b);
+    });
+  }
+  $("#scriptVer").addEventListener("click", function () {
+    var s = curScript();
+    if (!s || !cloudOn()) return;
+    scriptPause();
+    verData = []; verSel = -1;
+    $("#verModal").hidden = false;
+    $("#verTitle").textContent = "버전 기록 · " + (s.title || "제목 없는 대본");
+    $("#verList").textContent = "불러오는 중…";
+    $("#verText").textContent = "왼쪽에서 버전을 고르면 내용이 여기 보여요.";
+    $("#verRestore").hidden = true;
+    cloudFlush("script:" + s.id);
+    cloudSend({ a: "versions", id: s.id }, "☁️ 불러오는 중…").then(function (d) {
+      verData = d.versions || [];
+      renderVerList();
+    }).catch(function () { $("#verList").textContent = "버전 기록을 불러오지 못했어요. 인터넷 연결을 확인해 주세요."; });
+  });
+  $("#verRestore").addEventListener("click", function () {
+    var v = verData[verSel], s = curScript();
+    if (!v || !s) return;
+    if (!confirm(v.time + " 버전으로 되돌릴까요?\n(지금 내용도 버전 기록에 남아 있어서 다시 돌아올 수 있어요)")) return;
+    pushScript(s, false); // 지금 내용을 먼저 버전으로 남김
+    s.title = v.title; s.text = v.text;
+    saveScripts();
+    pushScript(s, false);
+    closeVer();
+    player.idx = 0;
+    renderScriptSelect();
+    renderScriptView();
+    updatePlayer(v.time + " 버전으로 되돌렸어요");
+  });
+  $("#verClose").addEventListener("click", closeVer);
+  $("#verModal").addEventListener("click", function (e) { if (e.target === this) closeVer(); });
 
   // 버튼을 누른 뒤 포커스가 남아 스페이스·Enter가 다시 눌리는 것 방지
   document.addEventListener("click", function (e) {
@@ -989,7 +1257,7 @@
 
   // ---------- 단축키 ----------
   document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") { stopAll(); closeBig(); return; }
+    if (e.key === "Escape") { stopAll(); closeBig(); closeVer(); return; }
     var tag = (document.activeElement && document.activeElement.tagName) || "";
     if (/INPUT|TEXTAREA|SELECT/.test(tag) || editing || e.ctrlKey || e.metaKey || e.altKey) return;
     if (tab === "script" && !scriptEditing) {
@@ -1045,6 +1313,11 @@
   renderScriptSelect();
   renderScriptView();
   renderMode();
+  if (cloudOn()) {
+    $("#scriptVer").hidden = false;
+    setCloud("busy", "☁️ 불러오는 중…");
+    cloudLoad(true);
+  }
 })();
 </script>
 </body>
