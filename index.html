@@ -181,15 +181,16 @@
   #scriptTitle { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 17px; margin-bottom: 8px; }
   #scriptText {
     width: 100%; height: calc(100vh - 400px); min-height: 280px; resize: vertical; padding: 14px 16px;
-    border: 2px solid var(--line); border-radius: 12px; font-size: 19px; line-height: 1.6;
+    border: 2px solid var(--line); border-radius: 12px; font-size: var(--script-font, 21px); line-height: 1.65;
   }
   #scriptText:focus, #scriptTitle:focus { outline: none; border-color: var(--accent); }
   .script-view {
     position: relative; height: calc(100vh - 420px); min-height: 260px; overflow-y: auto; padding: 6px 4px;
     border: 1px solid var(--line); border-radius: 12px; background: #fcfcfa;
   }
-  .script-view .para { margin: 0; padding: 10px 12px; font-size: 21px; line-height: 1.65; word-break: keep-all; }
-  .script-view .para + .para { border-top: 1px dashed var(--line); }
+  .script-view .doc { padding: 12px 16px; font-size: var(--script-font, 21px); line-height: 1.65; word-break: keep-all; }
+  .script-view .line { min-height: 1.65em; }
+  .script-view .blank { height: 1.65em; }
   .sent {
     cursor: pointer; border-radius: 6px; padding: 1px 2px;
     -webkit-box-decoration-break: clone; box-decoration-break: clone;
@@ -201,6 +202,11 @@
   .script-empty { color: var(--muted); padding: 40px 12px; text-align: center; font-size: 17px; }
   .mode { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 12px; font-size: 15px; color: var(--muted); }
   .mode[hidden] { display: none; }
+  .script-opts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-bottom: 12px; }
+  .script-opts .mode { margin-bottom: 0; }
+  .font-ctl { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); }
+  .font-ctl b { min-width: 2em; text-align: center; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .edit-btn { margin-left: auto; }
   .mode button {
     border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 7px 14px; font-size: 15px; font-weight: 600;
   }
@@ -227,7 +233,6 @@
   @media (max-width: 900px) {
     body.mode-script main { grid-template-columns: 1fr; }
     .script-view { height: 60vh; }
-    .script-view .para { font-size: 19px; }
   }
 
   /* 클라우드 상태 */
@@ -237,14 +242,12 @@
   .cloud[data-state="err"] { background: #fde8e7; color: #b42318; }
 
   /* 대본 목록 창 */
-  .bar-sep { flex: 0 0 1px; align-self: stretch; background: var(--line); margin: 2px 2px; }
   .list-btn { background: var(--accent-soft); border-color: #c4d4fb; color: var(--accent); }
   .list-box { width: min(580px, 100%); }
   .list-head { display: flex; align-items: center; gap: 12px; padding: 18px 22px 14px; border-bottom: 1px solid var(--line); }
   .list-head b { font-size: 18px; }
   .list-head-btns { margin-left: auto; display: flex; gap: 6px; }
   .list-rows { overflow-y: auto; padding: 6px 0 10px; }
-  .list-count { padding: 10px 22px 6px; font-size: 12px; color: #9a9aa0; }
   .lrow {
     display: flex; align-items: center; gap: 10px; padding: 13px 22px; cursor: pointer;
     border-bottom: 1px solid #f0eee9;
@@ -257,7 +260,8 @@
   .lrow-meta { flex: none; font-size: 13px; color: #9a9aa0; min-width: 4.5em; text-align: right; }
   .lrow-act { flex: none; border: none; background: none; font-size: 13px; color: #b0b0b6; padding: 4px 6px; border-radius: 6px; }
   .lrow-act:hover { color: var(--ink); background: var(--bg); }
-  .lrow-act.del:hover { color: var(--stop); background: #fde8e7; }
+  .lrow-act.del { color: var(--stop); border: 1px solid #efc5c2; background: #fff; font-weight: 600; padding: 4px 10px; margin-left: 2px; }
+  .lrow-act.del:hover { color: #fff; background: var(--stop); border-color: var(--stop); }
   .lrow-rename { flex: 1; min-width: 0; font-size: 16px; font-weight: 600; padding: 5px 8px; border: 2px solid var(--accent); border-radius: 8px; }
   .lrow-rename:focus { outline: none; }
   @media (max-width: 520px) { .list-head { flex-wrap: wrap; } .list-head-btns { margin-left: 0; } }
@@ -336,17 +340,24 @@
 
       <div class="panel" id="panel-script" hidden>
         <div class="script-bar">
-          <select id="scriptSel" aria-label="대본 고르기"></select>
-          <button class="mini" id="scriptEdit">✏️ 내용 편집</button>
-          <button class="mini" id="scriptVer" hidden>🕘 버전 기록</button>
-          <span class="bar-sep"></span>
           <button class="mini list-btn" id="scriptList">📚 대본 목록</button>
+          <select id="scriptSel" aria-label="대본 고르기"></select>
+          <button class="mini" id="scriptVer" hidden>🕘 버전 기록</button>
+          <button class="mini edit-btn" id="scriptEdit">✏️ 내용 편집</button>
           <input type="file" id="scriptFile" accept=".hwpx,.hwp,.txt" hidden>
         </div>
-        <div class="mode" id="modeBox">
-          읽기 방식
-          <button data-mode="line">👆 한 문장씩 (누를 때마다)</button>
-          <button data-mode="flow">▶ 쭉 이어서</button>
+        <div class="script-opts">
+          <div class="mode" id="modeBox">
+            읽기 방식
+            <button data-mode="line">👆 한 문장씩 (누를 때마다)</button>
+            <button data-mode="flow">▶ 쭉 이어서</button>
+          </div>
+          <div class="font-ctl">
+            글자 크기
+            <button class="mini" id="fontDown" title="글자 작게">가−</button>
+            <b id="fontVal">21</b>
+            <button class="mini" id="fontUp" title="글자 크게">가+</button>
+          </div>
         </div>
         <div id="scriptEditBox" hidden>
           <input id="scriptTitle" placeholder="대본 제목 (예: 28차시 별)">
@@ -773,18 +784,15 @@
     return scripts.find(function (s) { return s.id === curScriptId; }) || scripts[0];
   }
   function parseScript(text) {
-    // 빈 줄로 문단을 나누고, 문단 안에서 문장마다 누를 수 있게 한다
-    var items = [], pi = 0;
-    (text || "").split(/\n\s*\n/).forEach(function (para) {
-      var added = false;
-      splitText(para).forEach(function (s) {
+    // txt 파일처럼: 줄바꿈은 줄바꿈 그대로, 빈 줄은 빈 줄 그대로. 줄 안에서 문장마다 누를 수 있게 한다
+    var items = [];
+    (text || "").replace(/\r\n?/g, "\n").split("\n").forEach(function (line, li) {
+      splitText(line).forEach(function (s) {
         var prev = items[items.length - 1];
         // "ㅠㅠ"처럼 소리로 읽을 게 없는 조각은 앞 문장에 붙인다 (한 번 눌렀는데 아무 소리 안 나는 일 방지)
-        if (!spokenForm(s) && prev && prev.para === pi) { prev.text += " " + s; return; }
-        items.push({ text: s, para: pi });
-        added = true;
+        if (!spokenForm(s) && prev && prev.line === li) { prev.text += " " + s; return; }
+        items.push({ text: s, line: li });
       });
-      if (added) pi++;
     });
     return items;
   }
@@ -828,18 +836,25 @@
       acts.appendChild(b1); acts.appendChild(b2); em.appendChild(acts);
       view.appendChild(em);
     } else {
-      var frag = document.createDocumentFragment(), p = null, lastPara = -1;
-      player.items.forEach(function (it, i) {
-        if (it.para !== lastPara) { p = document.createElement("p"); p.className = "para"; frag.appendChild(p); lastPara = it.para; }
-        var sp = document.createElement("span");
-        sp.className = "sent";
-        sp.dataset.i = i;
-        sp.textContent = it.text;
-        sp.addEventListener("click", function () { scriptPlayFrom(i); });
-        p.appendChild(sp);
-        p.appendChild(document.createTextNode(" "));
-      });
-      view.appendChild(frag);
+      var doc = document.createElement("div"); doc.className = "doc";
+      var first = player.items[0].line, last = player.items[player.items.length - 1].line;
+      var byLine = {};
+      player.items.forEach(function (it, i) { (byLine[it.line] = byLine[it.line] || []).push(i); });
+      for (var li = first; li <= last; li++) {
+        if (!byLine[li]) { var bl = document.createElement("div"); bl.className = "blank"; doc.appendChild(bl); continue; }
+        var ln = document.createElement("div"); ln.className = "line";
+        byLine[li].forEach(function (i) {
+          var sp = document.createElement("span");
+          sp.className = "sent";
+          sp.dataset.i = i;
+          sp.textContent = player.items[i].text;
+          sp.addEventListener("click", function () { scriptPlayFrom(i); });
+          ln.appendChild(sp);
+          ln.appendChild(document.createTextNode(" "));
+        });
+        doc.appendChild(ln);
+      }
+      view.appendChild(doc);
     }
     highlight();
   }
@@ -890,6 +905,24 @@
       : "문장을 누르면 거기서부터 쭉 읽어요 · 스페이스 = 읽기/일시정지 · ← → = 이전/다음 문장";
     highlight();
   }
+  // 글자 크기 (컴퓨터마다 따로 저장)
+  function applyFont() {
+    var f = settings.scriptFont || 21;
+    document.documentElement.style.setProperty("--script-font", f + "px");
+    $("#fontVal").textContent = f;
+    $("#fontDown").disabled = f <= 14;
+    $("#fontUp").disabled = f >= 40;
+  }
+  function changeFont(d) {
+    settings.scriptFont = Math.max(14, Math.min(40, (settings.scriptFont || 21) + d));
+    saveSettings();
+    applyFont();
+    highlight(true);
+  }
+  $("#fontDown").addEventListener("click", function () { changeFont(-2); });
+  $("#fontUp").addEventListener("click", function () { changeFont(2); });
+  applyFont();
+
   document.querySelectorAll("#modeBox button").forEach(function (b) {
     b.addEventListener("click", function () {
       scriptPause();
@@ -1065,9 +1098,6 @@
     rows.innerHTML = "";
     var list = sortedScripts();
     $("#listTitle").textContent = "📚 대본 목록";
-    var count = document.createElement("div"); count.className = "list-count";
-    count.textContent = list.length + "개 · 차시 순서 · 누르면 열려요";
-    rows.appendChild(count);
     list.forEach(function (s) {
       var isCur = s.id === curScriptId;
       var row = document.createElement("div");
@@ -1112,7 +1142,7 @@
       meta.textContent = "문장 " + parseScript(s.text).length;
       var ren = document.createElement("button"); ren.className = "lrow-act"; ren.textContent = "이름"; ren.title = "이름 바꾸기";
       ren.addEventListener("click", function (e) { e.stopPropagation(); renamingId = s.id; renderList(); });
-      var del = document.createElement("button"); del.className = "lrow-act del"; del.textContent = "삭제";
+      var del = document.createElement("button"); del.className = "lrow-act del"; del.textContent = "🗑 삭제";
       del.addEventListener("click", function (e) { e.stopPropagation(); if (deleteScriptById(s.id)) renderList(); });
       row.appendChild(meta); row.appendChild(ren); row.appendChild(del);
       rows.appendChild(row);
