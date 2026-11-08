@@ -122,13 +122,6 @@
   .edit-list { display: flex; flex-direction: column; gap: 8px; }
   .edit-tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 
-  .sounds { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-  .sound {
-    border: 1px solid var(--line); background: var(--bg); border-radius: 12px;
-    padding: 14px 8px; font-size: 18px; font-weight: 600;
-  }
-  .sound span { display: block; font-size: 26px; margin-bottom: 2px; }
-  .sound:hover { background: var(--accent-soft); border-color: #c4d4fb; }
 
   /* 큰 글씨 화면 */
   #big {
@@ -304,17 +297,6 @@
       <p class="hint" id="phraseHint">키보드 숫자 1~9로도 바로 재생됩니다 (입력창 밖에서)</p>
     </section>
 
-    <section class="card">
-      <h2>효과음</h2>
-      <div class="sounds">
-        <button class="sound" data-sound="dingdong"><span>🔔</span>딩동 (주목)</button>
-        <button class="sound" data-sound="chime"><span>🎵</span>시작·끝 차임</button>
-        <button class="sound" data-sound="correct"><span>⭕</span>딩동댕 (정답)</button>
-        <button class="sound" data-sound="wrong"><span>❌</span>땡 (오답)</button>
-        <button class="sound" data-sound="clap"><span>👏</span>박수</button>
-        <button class="sound" data-sound="beep"><span>⏰</span>삐삐삐 (시간)</button>
-      </div>
-    </section>
   </div>
 </main>
 
@@ -626,53 +608,6 @@
   $("#bigClose").addEventListener("click", function (e) { e.stopPropagation(); closeBig(); });
   $("#bigSpeak").addEventListener("click", function (e) { e.stopPropagation(); speak(bigText.textContent, { noHistory: true }); });
   window.addEventListener("resize", function () { if (!big.hidden) fitBig(); });
-
-  // ---------- 효과음 (인터넷 없이 직접 합성) ----------
-  var actx = null;
-  function ac() {
-    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
-    if (actx.state === "suspended") actx.resume();
-    return actx;
-  }
-  function tone(freq, start, dur, type, gain) {
-    var c = ac(), o = c.createOscillator(), g = c.createGain();
-    o.type = type || "sine";
-    o.frequency.value = freq;
-    var t = c.currentTime + start;
-    var v = Math.max((gain || 0.5) * settings.volume, 0.0002);
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(v, t + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.connect(g); g.connect(c.destination);
-    o.start(t); o.stop(t + dur + 0.05);
-  }
-  function bell(f, s, d) {
-    tone(f, s, d, "sine", 0.5);
-    tone(f * 2.01, s, d * 0.6, "sine", 0.15);
-    tone(f * 3, s, d * 0.3, "sine", 0.06);
-  }
-  function clapAt(s) {
-    var c = ac(), len = 0.12;
-    var buf = c.createBuffer(1, Math.floor(c.sampleRate * len), c.sampleRate);
-    var d = buf.getChannelData(0);
-    for (var i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 4);
-    var src = c.createBufferSource(); src.buffer = buf;
-    var f = c.createBiquadFilter(); f.type = "bandpass"; f.frequency.value = 1100 + Math.random() * 700; f.Q.value = 0.8;
-    var g = c.createGain(); g.gain.value = 1.4 * settings.volume;
-    src.connect(f); f.connect(g); g.connect(c.destination);
-    src.start(c.currentTime + s);
-  }
-  var SOUNDS = {
-    dingdong: function () { bell(784, 0, 1.3); bell(622, 0.45, 1.7); },
-    chime: function () { [523, 659, 784, 1047].forEach(function (f, i) { bell(f, i * 0.3, 1.5); }); },
-    correct: function () { bell(523, 0, 1.0); bell(659, 0.22, 1.0); bell(784, 0.44, 1.6); },
-    wrong: function () { tone(160, 0, 0.7, "square", 0.25); tone(120, 0, 0.7, "sawtooth", 0.15); },
-    clap: function () { for (var i = 0; i < 12; i++) clapAt(i * 0.13 + Math.random() * 0.05); },
-    beep: function () { [0, 0.35, 0.7].forEach(function (s, i) { tone(880, s, i === 2 ? 0.55 : 0.25, "square", 0.22); }); }
-  };
-  document.querySelectorAll(".sound").forEach(function (b) {
-    b.addEventListener("click", function () { SOUNDS[b.dataset.sound](); });
-  });
 
   // ---------- 탭 ----------
   var tab = store.get("tv.tab", "type");
