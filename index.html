@@ -221,7 +221,7 @@
   .script-hint { font-size: 14px; color: var(--muted); }
 
   /* 대본 탭일 때: 대본이 화면을 차지하고 나머지는 작게 */
-  body.mode-script main { grid-template-columns: minmax(0, 1fr) 240px; max-width: none; }
+  body.mode-script main { grid-template-columns: minmax(0, 2.4fr) minmax(240px, 1fr); max-width: none; } /* 대본 약 70% : 자주 쓰는 말 약 30% */
   body.mode-script .history-card { display: none; }
   body.mode-script .phrases-card { padding: 14px; }
   body.mode-script .phrases { grid-template-columns: 1fr; gap: 6px; }

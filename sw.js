@@ -1,5 +1,5 @@
 // 오프라인에서도 열리도록 파일을 저장해 둔다. 내용을 바꾸면 VERSION 숫자를 올린다.
-const VERSION = "v17";
+const VERSION = "v18";
 const CACHE = "teacher-voice-" + VERSION;
 const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"];
 
