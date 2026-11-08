@@ -294,6 +294,7 @@
 
   function voiceScore(v) {
     var s = 0;
+    if (/yuna|유나/i.test(v.name)) s += 4;
     if (/natural|online|neural/i.test(v.name)) s += 2;
     if (/google/i.test(v.name)) s += 1;
     return s;
@@ -301,7 +302,15 @@
   function loadVoices() {
     if (!synth) return;
     var all = synth.getVoices();
-    voices = all.filter(function (v) { return /^ko/i.test(v.lang); });
+    var korean = all.filter(function (v) { return /^ko/i.test(v.lang); });
+    // 유나·Google 음성만 보여준다. 둘 다 없는 PC(예: 윈도우)에서는 있는 한국어 음성을 모두 보여준다.
+    var seen = {};
+    var preferred = korean.filter(function (v) {
+      if (!/yuna|유나|google/i.test(v.name) || seen[v.name]) return false;
+      seen[v.name] = true;
+      return true;
+    });
+    voices = preferred.length ? preferred : korean;
     voices.sort(function (a, b) { return voiceScore(b) - voiceScore(a); });
     voiceSel.innerHTML = "";
     if (!voices.length) {
