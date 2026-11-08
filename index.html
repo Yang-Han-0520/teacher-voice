@@ -284,7 +284,7 @@
   function addBanner(key, msg) { bannerMsgs[key] = msg; drawBanner(); }
   function removeBanner(key) { delete bannerMsgs[key]; drawBanner(); }
   if (/KAKAOTALK/i.test(navigator.userAgent)) {
-    addBanner("kakao", "카카오톡 안에서 열려 있습니다. 소리가 안 나면 오른쪽 위 메뉴에서 <b>다른 브라우저로 열기</b>(크롬·사파리 등)를 눌러주세요.");
+    addBanner("kakao", "카카오톡 안에서 열려 있습니다. 소리가 안 나면 오른쪽 위 메뉴에서 <b>다른 브라우저로 열기</b>(엣지·크롬)를 눌러주세요.");
   }
 
   // ---------- 음성 합성 ----------
@@ -293,24 +293,27 @@
   var voiceSel = $("#voice");
 
   function voiceScore(v) {
+    // 엣지 Natural 음성 > Google > 그 외(Heami 등)
     var s = 0;
-    if (/yuna|유나/i.test(v.name)) s += 4;
-    if (/natural|online|neural/i.test(v.name)) s += 2;
+    if (/natural|neural/i.test(v.name)) s += 4;
+    if (/online/i.test(v.name)) s += 2;
     if (/google/i.test(v.name)) s += 1;
+    if (/yuna|유나/i.test(v.name)) s += 1;
     return s;
   }
   function loadVoices() {
     if (!synth) return;
     var all = synth.getVoices();
     var korean = all.filter(function (v) { return /^ko/i.test(v.lang); });
-    // 유나·Google 음성만 보여준다. 둘 다 없는 PC(예: 윈도우)에서는 있는 한국어 음성을 모두 보여준다.
+    // 사용 환경은 윈도우(엣지·크롬). 한국어 음성은 모두 보여주되,
+    // 맥의 장난감 음성(Grandma, Rocko 등)과 같은 이름 중복만 뺀다.
+    var NOVELTY = /^(eddy|flo|grandma|grandpa|reed|rocko|sandy|shelley)\b/i;
     var seen = {};
-    var preferred = korean.filter(function (v) {
-      if (!/yuna|유나|google/i.test(v.name) || seen[v.name]) return false;
+    voices = korean.filter(function (v) {
+      if (NOVELTY.test(v.name) || seen[v.name]) return false;
       seen[v.name] = true;
       return true;
     });
-    voices = preferred.length ? preferred : korean;
     voices.sort(function (a, b) { return voiceScore(b) - voiceScore(a); });
     voiceSel.innerHTML = "";
     if (!voices.length) {
@@ -331,13 +334,13 @@
   }
 
   if (!synth) {
-    addBanner("nosynth", "이 브라우저는 읽어주기 기능을 지원하지 않습니다. <b>크롬</b>이나 <b>엣지</b>로 열어주세요.");
+    addBanner("nosynth", "이 브라우저는 읽어주기 기능을 지원하지 않습니다. <b>엣지(Edge)</b>나 <b>크롬</b>으로 열어주세요.");
   } else {
     loadVoices();
     if (synth.addEventListener) synth.addEventListener("voiceschanged", loadVoices);
     else synth.onvoiceschanged = loadVoices;
     setTimeout(function () {
-      if (!voices.length) addBanner("novoice", "한국어 음성을 찾지 못했습니다. <b>엣지</b>나 <b>크롬</b>으로 열어보세요. (윈도우는 설정 → 시간 및 언어 → 음성에서 한국어 음성을 추가할 수 있습니다)");
+      if (!voices.length) addBanner("novoice", "한국어 음성을 찾지 못했습니다. <b>엣지(Edge)</b>로 열어보세요. 그래도 안 되면 윈도우 <b>설정 → 시간 및 언어 → 음성</b>에서 한국어 음성을 추가해주세요.");
     }, 4000);
   }
   voiceSel.addEventListener("change", function () { settings.voice = voiceSel.value; saveSettings(); });
@@ -591,7 +594,7 @@
   var installBtn = $("#installBtn"), installHelp = $("#installHelp");
   var deferredPrompt = null;
   if (!standalone && /^https?:$/.test(location.protocol)) {
-    installHelp.textContent = "주소창 오른쪽의 설치 아이콘(⊕)을 눌러도 앱으로 설치돼요.";
+    installHelp.textContent = "엣지는 주소창 오른쪽 '앱 사용 가능' 아이콘, 크롬은 설치 아이콘(⊕)을 눌러도 설치돼요.";
   }
   window.addEventListener("beforeinstallprompt", function (e) {
     e.preventDefault();
