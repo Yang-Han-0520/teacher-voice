@@ -200,19 +200,19 @@
   .sent.next { color: var(--ink); box-shadow: 0 0 0 2px var(--accent); background: var(--accent-soft); }
   .sent.now { background: #ffe58a; color: var(--ink); box-shadow: 0 0 0 2px #ffe58a; }
   .script-empty { color: var(--muted); padding: 40px 12px; text-align: center; font-size: 17px; }
-  .mode { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 12px; font-size: 15px; color: var(--muted); }
+  .mode { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 12px; font-size: 14px; color: var(--muted); }
   .mode[hidden] { display: none; }
   .script-opts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-bottom: 12px; }
   .script-opts .mode { margin-bottom: 0; }
   .font-ctl { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); }
   .font-ctl b { min-width: 2em; text-align: center; color: var(--ink); font-variant-numeric: tabular-nums; }
   .mode button {
-    border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 7px 14px; font-size: 15px; font-weight: 600;
+    border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 5px 12px; font-size: 14px; font-weight: 600;
   }
   .mode button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .player { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
-  .player .btn { padding: 12px 16px; font-size: 18px; }
-  .player .btn.primary { flex: 1 1 160px; }
+  .player { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; }
+  .player .btn { padding: 8px 14px; font-size: 15px; border-radius: 10px; }
+  .player .btn.primary { flex: none; padding: 8px 20px; font-size: 16px; font-weight: 700; box-shadow: 0 2px 8px rgba(43, 98, 227, 0.25); }
   .player .btn:disabled { opacity: 0.45; cursor: default; }
   .player-status { font-size: 15px; color: var(--muted); margin-top: 10px; min-height: 1.4em; }
   .script-sub { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin-top: 4px; }
@@ -308,7 +308,7 @@
     <li><b>말하고 싶은 문장을 쓰고 Enter</b>를 누르면 소리로 읽어줘요.</li>
     <li>오른쪽 <b>자주 쓰는 말</b> 버튼을 누르면 바로 읽어줘요. 편집으로 문장을 바꿀 수 있어요.</li>
     <li><b>큰 화면으로</b>를 누르면 학생들에게 글씨를 크게 보여줘요.</li>
-    <li>긴 대본은 <b>대본 읽기</b> 탭 → <b>📚 대본 목록</b> → <b>📂 한글 파일 불러오기</b>로 한글 파일(.hwpx)을 바로 넣을 수 있어요.</li>
+    <li>긴 대본은 <b>대본 읽기</b> 탭 → <b>📚 대본 목록</b> → <b>+ 새로 쓰기</b>에 붙여넣으면 돼요.</li>
     <li>대본은 <b>▶ 버튼이나 스페이스를 누를 때마다 한 문장씩</b> 읽어줘요. 쭉 이어서 읽게 바꿀 수도 있어요.</li>
   </ol>
   <div class="row">
@@ -343,7 +343,6 @@
           <button class="mini list-btn" id="scriptList">📚 대본 목록</button>
           <button class="mini" id="scriptEdit">✏️ 내용 편집</button>
           <button class="mini" id="scriptVer" hidden>🕘 버전 기록</button>
-          <input type="file" id="scriptFile" accept=".hwpx,.hwp,.txt" hidden>
         </div>
         <div class="script-opts">
           <div class="mode" id="modeBox">
@@ -403,7 +402,6 @@
     <div class="list-head">
       <b id="listTitle">📚 대본 목록</b>
       <div class="list-head-btns">
-        <button class="mini" id="listOpenFile">📂 불러오기</button>
         <button class="mini" id="listNew">+ 새로 쓰기</button>
         <button class="mini" id="listClose">닫기</button>
       </div>
@@ -828,11 +826,9 @@
       em.className = "script-empty";
       em.textContent = "대본이 비어 있어요.";
       var acts = document.createElement("div"); acts.className = "empty-actions";
-      var b1 = document.createElement("button"); b1.className = "btn primary"; b1.textContent = "📂 한글 파일 불러오기";
-      b1.addEventListener("click", function () { $("#scriptFile").click(); });
-      var b2 = document.createElement("button"); b2.className = "btn"; b2.textContent = "✏️ 직접 쓰기";
+      var b2 = document.createElement("button"); b2.className = "btn primary"; b2.textContent = "✏️ 내용 쓰기";
       b2.addEventListener("click", function () { $("#scriptEdit").click(); });
-      acts.appendChild(b1); acts.appendChild(b2); em.appendChild(acts);
+      acts.appendChild(b2); em.appendChild(acts);
       view.appendChild(em);
     } else {
       var doc = document.createElement("div"); doc.className = "doc";
@@ -1158,57 +1154,6 @@
   $("#listClose").addEventListener("click", closeList);
   $("#listModal").addEventListener("click", function (e) { if (e.target === this) closeList(); });
   $("#listNew").addEventListener("click", function () { closeList(); newScript(); });
-  // ---------- 대본 파일 불러오기 (.hwpx / .txt) ----------
-  // hwpx = zip 안의 Contents/sectionN.xml. 브라우저 기본 기능(DecompressionStream)으로 직접 푼다.
-  function readZip(buf) {
-    var dv = new DataView(buf), eocd = -1;
-    for (var i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 65557); i--) {
-      if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
-    }
-    if (eocd < 0) throw new Error("zip 아님");
-    var count = dv.getUint16(eocd + 10, true), off = dv.getUint32(eocd + 16, true), files = {};
-    for (var n = 0; n < count; n++) {
-      if (dv.getUint32(off, true) !== 0x02014b50) break;
-      var nlen = dv.getUint16(off + 28, true), elen = dv.getUint16(off + 30, true), clen = dv.getUint16(off + 32, true);
-      var name = new TextDecoder().decode(new Uint8Array(buf, off + 46, nlen));
-      files[name] = { method: dv.getUint16(off + 10, true), csize: dv.getUint32(off + 20, true), lho: dv.getUint32(off + 42, true) };
-      off += 46 + nlen + elen + clen;
-    }
-    return { dv: dv, files: files };
-  }
-  function zipEntry(buf, dv, e) {
-    var nlen = dv.getUint16(e.lho + 26, true), elen = dv.getUint16(e.lho + 28, true);
-    var data = new Uint8Array(buf, e.lho + 30 + nlen + elen, e.csize);
-    if (e.method === 0) return Promise.resolve(data);
-    if (e.method === 8) {
-      var stream = new Blob([data]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
-      return new Response(stream).arrayBuffer().then(function (b) { return new Uint8Array(b); });
-    }
-    return Promise.reject(new Error("압축 방식 " + e.method));
-  }
-  function hwpxToText(buf) {
-    var z = readZip(buf);
-    var secs = Object.keys(z.files).filter(function (n) { return /^Contents\/section\d+\.xml$/i.test(n); })
-      .sort(function (a, b) { return parseInt(a.match(/\d+/)[0], 10) - parseInt(b.match(/\d+/)[0], 10); });
-    if (!secs.length) return Promise.reject(new Error("본문 없음"));
-    var paras = [];
-    return secs.reduce(function (p, name) {
-      return p.then(function () { return zipEntry(buf, z.dv, z.files[name]); }).then(function (bytes) {
-        var doc = new DOMParser().parseFromString(new TextDecoder("utf-8").decode(bytes), "application/xml");
-        var ps = doc.getElementsByTagNameNS("*", "p");
-        for (var i = 0; i < ps.length; i++) {
-          var txt = "", ts = ps[i].getElementsByTagNameNS("*", "t");
-          for (var j = 0; j < ts.length; j++) {
-            var a = ts[j].parentNode;
-            while (a && a.localName !== "p") a = a.parentNode;
-            if (a === ps[i]) txt += ts[j].textContent; // 표 안의 문단이 두 번 들어가지 않게
-          }
-          txt = txt.replace(/\s+/g, " ").trim();
-          if (txt) paras.push(txt);
-        }
-      });
-    }, Promise.resolve()).then(function () { return paras.join("\n\n"); });
-  }
   function importScript(title, text) {
     scriptPause();
     var s = { id: newId(), title: title, text: text };
@@ -1220,29 +1165,8 @@
     pushScript(s, false);
     renderScriptSelect();
     renderScriptView();
-    updatePlayer("'" + title + "' 불러왔어요 · 문장 " + player.items.length + "개");
   }
-  $("#listOpenFile").addEventListener("click", function () { closeList(); $("#scriptFile").click(); });
-  $("#scriptFile").addEventListener("change", function () {
-    var f = this.files && this.files[0];
-    this.value = "";
-    if (!f) return;
-    var title = f.name.replace(/\.[^.]+$/, "");
-    if (/\.hwp$/i.test(f.name)) {
-      alert("예전 한글 파일(.hwp)은 바로 못 읽어요.\n한글에서 '다른 이름으로 저장' → 파일 형식을 'HWPX'로 저장한 뒤 다시 불러와 주세요.\n(또는 한글에서 글을 복사해서 '편집'에 붙여넣어도 돼요)");
-      return;
-    }
-    var p = /\.txt$/i.test(f.name)
-      ? f.text()
-      : f.arrayBuffer().then(hwpxToText);
-    p.then(function (text) {
-      if (!text.trim()) throw new Error("빈 파일");
-      importScript(title, text);
-    }).catch(function () {
-      alert("파일을 읽지 못했어요. 한글에서 글을 복사해서 '+ 새 대본'에 붙여넣어 주세요.");
-    });
-  });
-  window.__tv = { hwpxToText: hwpxToText, importScript: importScript, splitText: splitText, spokenForm: spokenForm };
+  window.__tv = { importScript: importScript, splitText: splitText, spokenForm: spokenForm }; // 자동 테스트용
 
   function scheduleDraft() {
     var s = curScript();
