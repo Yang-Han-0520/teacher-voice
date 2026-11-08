@@ -166,37 +166,77 @@
   .panel[hidden] { display: none; }
 
   /* 대본 읽기 */
-  .script-top { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
-  .script-top select { flex: 1 1 180px; min-width: 0; padding: 9px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); font-size: 16px; }
-  .script-top .btn { padding: 9px 14px; font-size: 15px; }
+  .mini {
+    border: 1px solid var(--line); background: var(--card); border-radius: 8px;
+    padding: 6px 10px; font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap;
+  }
+  .mini:hover { border-color: #c9c5bc; }
+  .mini.danger { color: var(--stop); }
+  .mini[hidden] { display: none; }
+  .script-bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 10px; }
+  .script-bar select {
+    flex: 1 1 220px; min-width: 0; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px;
+    background: var(--card); font-size: 16px; font-weight: 700;
+  }
   #scriptTitle { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; font-size: 17px; margin-bottom: 8px; }
   #scriptText {
-    width: 100%; min-height: 320px; resize: vertical; padding: 14px 16px;
+    width: 100%; height: calc(100vh - 400px); min-height: 280px; resize: vertical; padding: 14px 16px;
     border: 2px solid var(--line); border-radius: 12px; font-size: 19px; line-height: 1.6;
   }
   #scriptText:focus, #scriptTitle:focus { outline: none; border-color: var(--accent); }
+  .progress { height: 5px; background: var(--line); border-radius: 99px; overflow: hidden; margin-bottom: 8px; }
+  .progress-fill { height: 100%; width: 0; background: var(--accent); transition: width 0.25s; }
   .script-view {
-    max-height: 420px; overflow-y: auto; padding: 6px 4px; border: 1px solid var(--line);
-    border-radius: 12px; background: #fcfcfa;
+    position: relative; height: calc(100vh - 390px); min-height: 240px; overflow-y: auto; padding: 8px;
+    border: 1px solid var(--line); border-radius: 12px; background: #fcfcfa;
   }
-  .script-view p { margin: 0; padding: 10px 12px; font-size: 21px; line-height: 1.65; }
-  .script-view p + p { border-top: 1px dashed var(--line); }
-  .sent { cursor: pointer; border-radius: 6px; padding: 1px 2px; }
+  .sent {
+    display: flex; gap: 14px; align-items: baseline; padding: 8px 14px; border-radius: 10px;
+    border: 2px solid transparent; cursor: pointer; font-size: 25px; line-height: 1.5; word-break: keep-all;
+  }
+  .sent + .sent { margin-top: 2px; }
+  .sent .num {
+    flex: none; min-width: 2.2em; text-align: right; font-size: 15px; font-weight: 700;
+    color: var(--muted); font-variant-numeric: tabular-nums;
+  }
   .sent:hover { background: var(--accent-soft); }
-  .sent.done { color: #9a9aa0; }
-  .sent.now { background: #ffe58a; color: var(--ink); box-shadow: 0 0 0 2px #ffe58a; }
-  .sent.next { color: var(--ink); box-shadow: 0 0 0 2px var(--accent); background: var(--accent-soft); }
-  .mode { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 12px; font-size: 15px; color: var(--muted); }
-  .mode button {
-    border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 7px 14px; font-size: 15px; font-weight: 600;
+  .sent.done { color: #a5a5ab; }
+  .sent.done .num { color: #c8c8cc; }
+  .sent.next { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
+  .sent.now { border-color: #f2c94c; background: #fff3bf; color: var(--ink); }
+  .script-empty { color: var(--muted); padding: 40px 12px; text-align: center; font-size: 17px; }
+  .player { display: flex; gap: 10px; align-items: stretch; margin-top: 12px; }
+  .player .btn.primary { flex: 1; font-size: 22px; padding: 16px 20px; }
+  .player .btn.primary:disabled { opacity: 0.5; cursor: default; }
+  .player .again { padding: 0 16px; font-size: 16px; }
+  .pcount {
+    align-self: center; min-width: 5.5em; text-align: right; font-size: 20px; font-weight: 800;
+    color: var(--muted); font-variant-numeric: tabular-nums;
   }
-  .mode button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .script-empty { color: var(--muted); padding: 24px 12px; text-align: center; font-size: 16px; }
-  .player { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
-  .player .btn { padding: 12px 16px; font-size: 18px; }
-  .player .btn.primary { flex: 1 1 160px; }
-  .player-status { font-size: 15px; color: var(--muted); margin-top: 10px; min-height: 1.4em; }
-  .script-top .btn[hidden] { display: none; }
+  .player-sub { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-top: 10px; }
+  .mode { display: inline-flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); }
+  .mode button { border: none; background: none; border-radius: 999px; padding: 5px 12px; font-size: 14px; font-weight: 600; color: var(--muted); }
+  .mode button.on { background: var(--accent); color: #fff; }
+  .player-status { font-size: 14px; color: var(--muted); margin-top: 8px; }
+  .player-status:empty { display: none; }
+  .mini-toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); cursor: pointer; user-select: none; }
+  .mini-toggle input { width: 16px; height: 16px; }
+  .script-hint { margin-left: auto; font-size: 13px; color: var(--muted); }
+
+  /* 대본 탭일 때: 대본이 화면을 차지하고 나머지는 작게 */
+  body.mode-script main { grid-template-columns: minmax(0, 1fr) 240px; max-width: none; }
+  body.mode-script .history-card { display: none; }
+  body.mode-script .phrases-card { padding: 14px; }
+  body.mode-script .phrases { grid-template-columns: 1fr; gap: 6px; }
+  body.mode-script .phrase { font-size: 15px; padding: 8px 10px; min-height: 0; border-radius: 8px; }
+  body.mode-script .phrase .key { display: none; }
+  body.mode-script #phraseHint { display: none; }
+  body.mode-script #showBigBox { display: none; }
+  @media (max-width: 900px) {
+    body.mode-script main { grid-template-columns: 1fr; }
+    .script-view { height: 60vh; }
+    .sent { font-size: 21px; }
+  }
 
   /* 클라우드 상태 */
   .cloud { font-size: 14px; font-weight: 600; padding: 6px 12px; border-radius: 999px; background: #eaf6ee; color: #1f7a3d; white-space: nowrap; }
@@ -276,50 +316,52 @@
       </div>
 
       <div class="panel" id="panel-script" hidden>
-        <div class="script-top">
+        <div class="script-bar">
           <select id="scriptSel" aria-label="대본 고르기"></select>
-          <button class="btn" id="scriptEdit">편집</button>
-          <button class="btn" id="scriptNew">+ 새 대본</button>
-          <button class="btn" id="scriptOpen" title="한글(.hwpx) 또는 텍스트(.txt) 파일">📂 파일 불러오기</button>
-          <button class="btn" id="scriptVer" hidden>🕘 버전 기록</button>
-          <button class="btn" id="scriptDel" style="color:var(--stop)">삭제</button>
+          <button class="mini" id="scriptEdit">✏️ 편집</button>
+          <button class="mini" id="scriptOpen" title="한글(.hwpx) 또는 텍스트(.txt) 파일">📂 불러오기</button>
+          <button class="mini" id="scriptNew">+ 새 대본</button>
+          <button class="mini" id="scriptVer" hidden>🕘 버전 기록</button>
+          <button class="mini danger" id="scriptDel">삭제</button>
           <input type="file" id="scriptFile" accept=".hwpx,.hwp,.txt" hidden>
         </div>
-        <div class="mode" id="modeBox">
-          읽기 방식
-          <button data-mode="line">👆 한 문장씩 (누를 때마다)</button>
-          <button data-mode="flow">▶ 쭉 이어서</button>
-        </div>
         <div id="scriptEditBox" hidden>
-          <input id="scriptTitle" placeholder="대본 제목 (예: 3반 국어 5과)">
-          <textarea id="scriptText" placeholder="여기에 대본을 붙여넣거나 써주세요.&#10;빈 줄로 나누면 문단이 됩니다."></textarea>
-          <p class="hint">쓰는 즉시 저장됩니다. 다 쓰면 위의 <b>완료</b>를 누르세요.</p>
+          <input id="scriptTitle" placeholder="대본 제목 (예: 28차시 별)">
+          <textarea id="scriptText" placeholder="여기에 대본을 붙여넣거나 써주세요.&#10;마침표·물음표·느낌표나 줄바꿈마다 한 문장으로 나눠서 한 줄씩 보여줘요."></textarea>
+          <p class="hint">쓰는 즉시 저장돼요. 다 쓰면 위의 <b>✔ 완료</b>를 누르세요.</p>
         </div>
         <div id="scriptReadBox">
+          <div class="progress"><div class="progress-fill" id="pBar"></div></div>
           <div class="script-view" id="scriptView"></div>
           <div class="player">
-            <button class="btn primary" id="pPlay">▶ 읽기</button>
-            <button class="btn" id="pPrev" title="이전 문장 (←)">⏮ 이전</button>
-            <button class="btn" id="pNext" title="다음 문장 (→)">⏭ 다음</button>
-            <button class="btn stop" id="pStop" title="처음으로">■ 처음으로</button>
+            <button class="mini again" id="pPrev" title="방금 문장 다시 읽기 (PageUp)">↺ 다시</button>
+            <button class="btn primary" id="pPlay">▶ 첫 문장 읽기</button>
+            <span class="pcount" id="pCount"></span>
           </div>
-          <label class="toggle" id="pauseAtParaBox"><input type="checkbox" id="pauseAtPara"> 문단마다 멈추기 (▶를 누르면 다음 문단을 읽어요)</label>
+          <div class="player-sub">
+            <div class="mode" id="modeBox">
+              <button data-mode="line">👆 한 문장씩</button>
+              <button data-mode="flow">▶ 쭉 이어서</button>
+            </div>
+            <button class="mini" id="pStop" title="처음 문장으로">⟲ 처음으로</button>
+            <label class="mini-toggle"><input type="checkbox" id="showBig2"> 큰 화면에도 띄우기</label>
+            <span class="script-hint" id="scriptHint"></span>
+          </div>
           <div class="player-status" id="pStatus"></div>
-          <p class="hint" id="scriptHint"></p>
         </div>
       </div>
 
-      <label class="toggle"><input type="checkbox" id="showBig"> 읽을 때 큰 화면에도 같이 띄우기</label>
+      <label class="toggle" id="showBigBox"><input type="checkbox" id="showBig"> 읽을 때 큰 화면에도 같이 띄우기</label>
     </section>
 
-    <section class="card">
+    <section class="card history-card">
       <h2>방금 말한 문장 <button class="linkbtn" id="clearHistory">비우기</button></h2>
       <div class="history" id="history"></div>
     </section>
   </div>
 
   <div class="stack">
-    <section class="card">
+    <section class="card phrases-card">
       <h2>자주 쓰는 말 <button class="linkbtn" id="editToggle">편집</button></h2>
       <div id="phrasesBox"></div>
       <p class="hint" id="phraseHint">키보드 숫자 1~9로도 바로 재생됩니다 (입력창 밖에서)</p>
@@ -550,9 +592,16 @@
   });
   stopBtn.addEventListener("click", stopAll);
 
-  var showBig = $("#showBig");
-  showBig.checked = !!settings.showBig;
-  showBig.addEventListener("change", function () { settings.showBig = showBig.checked; saveSettings(); });
+  // 직접 입력 탭(#showBig)과 대본 탭(#showBig2)의 "큰 화면에도 띄우기"는 같은 설정
+  var showBig = $("#showBig"), showBig2 = $("#showBig2");
+  showBig.checked = showBig2.checked = !!settings.showBig;
+  [showBig, showBig2].forEach(function (el) {
+    el.addEventListener("change", function () {
+      settings.showBig = el.checked;
+      showBig.checked = showBig2.checked = el.checked;
+      saveSettings();
+    });
+  });
 
   // ---------- 최근 문장 ----------
   function addHistory(t) {
@@ -662,6 +711,7 @@
     document.querySelectorAll(".tab").forEach(function (b) { b.classList.toggle("on", b.dataset.tab === t); });
     $("#panel-type").hidden = t !== "type";
     $("#panel-script").hidden = t !== "script";
+    document.body.classList.toggle("mode-script", t === "script");
   }
   document.querySelectorAll(".tab").forEach(function (b) {
     b.addEventListener("click", function () { showTab(b.dataset.tab); });
@@ -681,27 +731,20 @@
   var curScriptId = store.get("tv.curScript", scripts[0].id);
   var scriptEditing = false;
   var player = { items: [], idx: 0, playing: false, token: 0, u: null };
-  var pauseAtPara = $("#pauseAtPara");
-  pauseAtPara.checked = !!settings.pauseAtPara;
-  pauseAtPara.addEventListener("change", function () { settings.pauseAtPara = pauseAtPara.checked; saveSettings(); });
 
   function saveScripts() { store.set("tv.scripts", scripts); store.set("tv.curScript", curScriptId); }
   function curScript() {
     return scripts.find(function (s) { return s.id === curScriptId; }) || scripts[0];
   }
   function parseScript(text) {
+    // 문단 구분 없이 문장 하나 = 한 줄
     var items = [];
-    (text || "").split(/\n\s*\n/).forEach(function (para, pi) {
-      splitText(para).forEach(function (s) {
-        var prev = items[items.length - 1];
-        // "ㅠㅠ"처럼 소리로 읽을 게 없는 조각은 앞 문장에 붙인다 (한 번 눌렀는데 아무 소리 안 나는 일 방지)
-        if (!spokenForm(s) && prev && prev.para === pi) { prev.text += " " + s; return; }
-        items.push({ text: s, para: pi });
-      });
+    splitText(text || "").forEach(function (s) {
+      var prev = items[items.length - 1];
+      // "ㅠㅠ"처럼 소리로 읽을 게 없는 조각은 앞 문장에 붙인다 (한 번 눌렀는데 아무 소리 안 나는 일 방지)
+      if (!spokenForm(s) && prev) { prev.text += " " + s; return; }
+      items.push({ text: s });
     });
-    // 문단 번호를 0,1,2… 로 다시 매긴다 (빈 문단 건너뜀)
-    var map = {}, n = 0;
-    items.forEach(function (it) { if (!(it.para in map)) map[it.para] = n++; it.para = map[it.para]; });
     return items;
   }
 
@@ -719,7 +762,7 @@
 
   function renderScriptView() {
     var s = curScript();
-    $("#scriptEdit").textContent = scriptEditing ? "완료" : "편집";
+    $("#scriptEdit").textContent = scriptEditing ? "✔ 완료" : "✏️ 편집";
     $("#scriptEditBox").hidden = !scriptEditing;
     $("#scriptReadBox").hidden = scriptEditing;
     if (scriptEditing) {
@@ -734,20 +777,21 @@
     if (!player.items.length) {
       var em = document.createElement("div");
       em.className = "script-empty";
-      em.textContent = "대본이 비어 있어요. 위의 '편집'을 눌러 대본을 붙여넣어 주세요.";
+      em.textContent = "대본이 비어 있어요. 위의 '📂 불러오기'로 한글 파일을 넣거나 '✏️ 편집'에 붙여넣어 주세요.";
       view.appendChild(em);
     } else {
-      var p = null, lastPara = -1;
+      var frag = document.createDocumentFragment();
       player.items.forEach(function (it, i) {
-        if (it.para !== lastPara) { p = document.createElement("p"); view.appendChild(p); lastPara = it.para; }
-        var sp = document.createElement("span");
-        sp.className = "sent";
-        sp.dataset.i = i;
-        sp.textContent = it.text;
-        sp.addEventListener("click", function () { scriptPlayFrom(i); });
-        p.appendChild(sp);
-        p.appendChild(document.createTextNode(" "));
+        var row = document.createElement("div");
+        row.className = "sent";
+        row.dataset.i = i;
+        var num = document.createElement("span"); num.className = "num"; num.textContent = String(i + 1);
+        var txt = document.createElement("span"); txt.textContent = it.text;
+        row.appendChild(num); row.appendChild(txt);
+        row.addEventListener("click", function () { scriptPlayFrom(i); });
+        frag.appendChild(row);
       });
+      view.appendChild(frag);
     }
     highlight();
   }
@@ -764,8 +808,13 @@
       el.classList.toggle("done", i < player.idx);
     });
     if (scroll) {
+      // 대본 칸 안에서만 스크롤 (scrollIntoView는 페이지 전체까지 움직여서 쓰지 않음)
       var cur = document.querySelector("#scriptView .sent.now, #scriptView .sent.next");
-      if (cur) cur.scrollIntoView({ block: "center", behavior: "smooth" });
+      var view = $("#scriptView");
+      if (cur && view.clientHeight) {
+        var top = cur.offsetTop - view.clientHeight / 2 + cur.offsetHeight / 2;
+        view.scrollTop = Math.max(0, top); // 즉시 이동 (부드러운 스크롤은 환경에 따라 안 움직이는 경우가 있어 사용 안 함)
+      }
     }
     updatePlayer();
   }
@@ -779,17 +828,19 @@
       playBtn.textContent = player.playing ? "⏸ 일시정지" : (player.idx > 0 ? "▶ 이어서 읽기" : "▶ 처음부터 읽기");
     }
     playBtn.disabled = !total;
-    $("#pStatus").textContent = msg || (total ? ("문장 " + Math.min(player.idx + 1, total) + " / " + total + (player.playing ? " · 읽는 중" : "")) : "");
+    $("#pPrev").disabled = !total || (!player.playing && player.idx === 0);
+    $("#pCount").textContent = total ? (Math.min(player.idx + 1, total) + " / " + total) : "";
+    $("#pBar").style.width = total ? (Math.min(player.idx, total) / total * 100) + "%" : "0";
+    $("#pStatus").textContent = msg || (player.playing ? "🔊 읽는 중…" : "");
   }
 
   function renderMode() {
     document.querySelectorAll("#modeBox button").forEach(function (b) {
       b.classList.toggle("on", (b.dataset.mode === "line") === lineMode());
     });
-    $("#pauseAtParaBox").style.display = lineMode() ? "none" : "";
     $("#scriptHint").textContent = lineMode()
-      ? "▶ 버튼이나 스페이스를 누를 때마다 한 문장씩 읽어요 · 문장을 누르면 그 문장만 읽어요 · ← → = 이전/다음 문장으로 이동"
-      : "문장을 누르면 거기서부터 쭉 읽어요 · 스페이스 = 읽기/일시정지 · ← → = 이전/다음 문장";
+      ? "스페이스·PageDown = 다음 문장 · PageUp = 다시 읽기 · 문장을 누르면 그 문장만 읽어요 · ← → = 위치만 이동"
+      : "문장을 누르면 거기서부터 쭉 읽어요 · 스페이스 = 읽기/일시정지 · ← → = 위치 이동";
     highlight();
   }
   document.querySelectorAll("#modeBox button").forEach(function (b) {
@@ -817,18 +868,10 @@
         if (token !== player.token || !player.playing) return;
         var next = player.idx + 1;
         if (next >= player.items.length) { player.idx = next; scriptFinish(); return; }
-        var paraEnd = player.items[next].para !== it.para;
         player.idx = next;
         if (lineMode()) {
           player.playing = false;
           highlight(true);
-          updatePlayer("다음 문장은 파란 테두리 · ▶ 또는 스페이스를 누르면 읽어요 (" + (next + 1) + " / " + player.items.length + ")");
-          return;
-        }
-        if (settings.pauseAtPara && paraEnd) {
-          player.playing = false;
-          highlight(true);
-          updatePlayer("문단 끝 · ▶를 누르면 다음 문단을 읽어요");
           return;
         }
         speakCurrent();
@@ -878,8 +921,12 @@
   $("#pPlay").addEventListener("click", function () {
     if (player.playing) scriptPause(); else scriptPlayFrom(player.idx);
   });
-  $("#pPrev").addEventListener("click", function () { scriptStep(-1); });
-  $("#pNext").addEventListener("click", function () { scriptStep(1); });
+  // 다시 읽기: 읽는 중이면 지금 문장을 처음부터, 멈춰 있으면 방금 읽은 문장을 다시
+  function scriptAgain() {
+    if (!player.items.length) return;
+    scriptPlayFrom(player.playing ? player.idx : Math.max(0, player.idx - 1));
+  }
+  $("#pPrev").addEventListener("click", scriptAgain);
   $("#pStop").addEventListener("click", function () {
     scriptPause();
     player.idx = 0;
@@ -1261,11 +1308,13 @@
     var tag = (document.activeElement && document.activeElement.tagName) || "";
     if (/INPUT|TEXTAREA|SELECT/.test(tag) || editing || e.ctrlKey || e.metaKey || e.altKey) return;
     if (tab === "script" && !scriptEditing) {
-      if (e.key === " " || e.code === "Space") {
+      // 스페이스·PageDown(발표용 리모컨 '다음' 버튼) = 읽기, PageUp(리모컨 '이전') = 다시 읽기
+      if (e.key === " " || e.code === "Space" || e.key === "PageDown") {
         e.preventDefault();
         if (player.playing) scriptPause(); else scriptPlayFrom(player.idx);
         return;
       }
+      if (e.key === "PageUp") { e.preventDefault(); scriptAgain(); return; }
       if (e.key === "ArrowRight") { e.preventDefault(); scriptStep(1); return; }
       if (e.key === "ArrowLeft") { e.preventDefault(); scriptStep(-1); return; }
     }
