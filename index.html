@@ -1041,7 +1041,7 @@
   // ---------- 클라우드 저장 (전용 링크 #k=비밀키) ----------
   // 전용 링크로 열면 문장·대본이 구글 시트에 저장돼 어느 PC에서나 같은 내용이 보인다.
   // 키 없이 열면 지금처럼 이 브라우저에만 저장된다.
-  var API_URL = "";
+  var API_URL = "https://script.google.com/macros/s/AKfycbyyyCY_oyCLa5ixqyVGrLP90LThIqe7QMFjBPb5PEAPgltd0fBLI4LSH9gXRQPMrQ9P/exec";
   var cloud = { key: null, timers: {}, chain: Promise.resolve(), busy: 0, lastLoad: 0, dirty: { phrases: false, scripts: {}, deletes: {} } };
   (function () {
     var m = location.hash.match(/(?:^#|&)k=([A-Za-z0-9_-]{16,})/);
