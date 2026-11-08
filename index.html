@@ -214,7 +214,7 @@
     <label>속도 <input id="rate" type="range" min="0.6" max="1.5" step="0.05"><output id="rateOut"></output></label>
     <label>음량 <input id="volume" type="range" min="0" max="1" step="0.05"><output id="volOut"></output></label>
     <button class="btn small-btn" id="testVoice">음성 테스트</button>
-    <button class="btn small-btn" id="helpBtn">사용법</button>
+    <button class="btn small-btn" id="helpBtn">❓ 사용법</button>
   </div>
 </header>
 
@@ -226,12 +226,14 @@
     <li><b>말하고 싶은 문장을 쓰고 Enter</b>를 누르면 소리로 읽어줘요.</li>
     <li>오른쪽 <b>자주 쓰는 말</b> 버튼을 누르면 바로 읽어줘요. 편집으로 문장을 바꿀 수 있어요.</li>
     <li><b>큰 화면으로</b>를 누르면 학생들에게 글씨를 크게 보여줘요.</li>
-    <li>긴 글은 <b>대본 읽기</b> 탭에 붙여넣고 ▶를 누르면 처음부터 끝까지 읽어줘요.</li>
+    <li>긴 대본은 <b>대본 읽기</b> 탭 → <b>📂 파일 불러오기</b>로 한글 파일(.hwpx)을 바로 넣을 수 있어요.</li>
+    <li>대본은 <b>▶ 버튼이나 스페이스를 누를 때마다 한 문장씩</b> 읽어줘요. 쭉 이어서 읽게 바꿀 수도 있어요.</li>
   </ol>
   <div class="row">
     <button class="btn primary" id="installBtn" hidden style="flex:none">📌 바탕화면에 앱으로 설치</button>
     <span class="install-help" id="installHelp"></span>
-    <button class="btn" id="guideClose" style="margin-left:auto">알겠어요, 닫기</button>
+    <span class="install-help" style="margin-left:auto">닫아도 오른쪽 위 <b>사용법</b> 버튼으로 다시 볼 수 있어요</span>
+    <button class="btn" id="guideClose">알겠어요, 닫기</button>
   </div>
 </section>
 
